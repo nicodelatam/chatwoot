@@ -10,7 +10,7 @@ class CommunityCalling::MetaClient
   end
 
   def enable
-    raise CommunityCallingError, 'SIP is enabled on this number. Use a separate Cloud API number for browser calling.' if settings.dig('calling', 'sip', 'status') == 'ENABLED'
+    raise CustomExceptions::CommunityCallingError, 'SIP is enabled on this number. Use a separate Cloud API number for browser calling.' if settings.dig('calling', 'sip', 'status') == 'ENABLED'
 
     request(:post, 'settings', calling: { status: 'ENABLED' })
   end
@@ -57,11 +57,11 @@ class CommunityCalling::MetaClient
     response = HTTParty.public_send(method, "#{base}/v24.0/#{@channel.provider_config.fetch('phone_number_id')}/#{path}", options)
     unless response.success?
       code = response.parsed_response.dig('error', 'code') if response.parsed_response.is_a?(Hash)
-      raise CommunityCallingError.new("Meta rejected the calling request (HTTP #{response.code}, code #{code}). Check number eligibility, permissions and calling settings.", 'meta_error')
+      raise CustomExceptions::CommunityCallingError.new("Meta rejected the calling request (HTTP #{response.code}, code #{code}). Check number eligibility, permissions and calling settings.", 'meta_error')
     end
 
     response.parsed_response
   rescue Net::OpenTimeout, Net::ReadTimeout, SocketError
-    raise CommunityCallingError.new('Meta could not be reached. Check the call status before trying again.', 'meta_unavailable')
+    raise CustomExceptions::CommunityCallingError.new('Meta could not be reached. Check the call status before trying again.', 'meta_unavailable')
   end
 end

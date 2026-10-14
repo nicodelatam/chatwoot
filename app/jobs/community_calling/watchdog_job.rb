@@ -1,7 +1,7 @@
 # Expire ringing calls and terminate calls whose browser stopped sending heartbeats.
 class CommunityCalling::WatchdogJob < ApplicationJob
   queue_as :default
-  retry_on CommunityCallingError, wait: 10.seconds, attempts: 3 do |job, _error|
+  retry_on CustomExceptions::CommunityCallingError, wait: 10.seconds, attempts: 3 do |job, _error|
     # Keep the reservation and retry cleanup after an outage instead of abandoning a live Meta call.
     Rails.logger.warn('[CommunityCalling] Remote cleanup is pending; retrying in 30 seconds')
     job.class.set(wait: 30.seconds).perform_later(*job.arguments)

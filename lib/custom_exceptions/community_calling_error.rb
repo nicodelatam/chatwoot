@@ -1,4 +1,4 @@
-class CommunityCallingError < StandardError
+class CustomExceptions::CommunityCallingError < StandardError
   attr_reader :code
 
   def initialize(message, code = 'calling_error')
