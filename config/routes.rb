@@ -309,6 +309,20 @@ Rails.application.routes.draw do
             end
           end
 
+          resources :community_whatsapp_calls, only: %i[index show create] do
+            collection do
+              post :configure
+              get :permission
+              post :request_permission
+            end
+            member do
+              post :pre_accept
+              post :accept
+              post :reject
+              post :terminate
+            end
+          end
+
           resources :custom_attribute_definitions, only: [:index, :show, :create, :update, :destroy]
           resources :custom_filters, only: [:index, :show, :create, :update, :destroy]
           resource :branded_email_layout, only: [:show, :update]

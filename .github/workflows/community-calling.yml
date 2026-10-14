@@ -1,0 +1,84 @@
+name: Community WhatsApp calling
+
+on:
+  push:
+    branches: [feat/community-whatsapp-calling]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: community-calling-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_PASSWORD: integration
+          POSTGRES_DB: community_calling_validation
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 5s --health-timeout 5s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint community calling frontend
+        run: >-
+          pnpm exec eslint app/javascript/dashboard/api/communityWhatsappCalls.js
+          app/javascript/dashboard/composables/useCommunityWhatsappCalling.js
+          app/javascript/dashboard/components-next/CommunityCalling/*.vue
+          app/javascript/dashboard/routes/dashboard/Dashboard.vue
+          app/javascript/dashboard/components/widgets/conversation/ConversationHeader.vue
+          app/javascript/dashboard/i18n/locale/en/index.js
+      - name: Existing conversation frontend regression tests
+        run: >-
+          pnpm exec vitest run app/javascript/dashboard/components/widgets/conversation/specs/ConversationCard.spec.js
+          app/javascript/dashboard/components/widgets/conversation/specs/ContactConversationLink.spec.js
+        env:
+          TZ: UTC
+      - name: Build Community Edition only
+        run: |
+          test "$PWD" = "$GITHUB_WORKSPACE"
+          rm -rf enterprise spec/enterprise
+          printf '\nENV CW_EDITION="ce"\nENV DISABLE_ENTERPRISE="true"\n' >> docker/Dockerfile
+          docker build -f docker/Dockerfile -t community-calling-validation .
+      - name: Ruby syntax
+        run: |
+          docker run --rm community-calling-validation sh -c '
+            for file in app/models/community_whatsapp_call.rb app/controllers/api/v1/accounts/community_whatsapp_calls_controller.rb app/services/community_calling/*.rb app/jobs/community_calling/*.rb lib/custom_exceptions/community_calling_error.rb db/migrate/20261014140000_create_community_whatsapp_calls.rb; do ruby -c "$file" || exit; done
+            test ! -d /app/enterprise'
+      - name: Migrate isolated database and validate Rails routes
+        run: |
+          docker run --rm --network host \
+            -e SECRET_KEY_BASE=ci-only-community-calling-$(openssl rand -hex 32) \
+            -e DATABASE_URL=postgresql://postgres:integration@localhost:5432/community_calling_validation \
+            -e REDIS_URL=redis://localhost:6379 -e FRONTEND_URL=http://localhost:3000 \
+            -e RAILS_ENV=production -e ENABLE_ACCOUNT_SIGNUP=true \
+            community-calling-validation sh -c '
+              bundle exec rails db:chatwoot_prepare &&
+              bundle exec rails runner "abort if ChatwootApp.enterprise?; abort unless CommunityWhatsappCall.table_exists?; abort unless Rails.application.routes.url_helpers.api_v1_account_community_whatsapp_calls_path(account_id: 1).include?(%q[community_whatsapp_calls]); puts %q[Community calling database and routes verified]"'
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Publish verified immutable image
+        run: |
+          docker tag community-calling-validation ghcr.io/nicodelatam/chatwoot-community:${{ github.sha }}
+          docker push ghcr.io/nicodelatam/chatwoot-community:${{ github.sha }}

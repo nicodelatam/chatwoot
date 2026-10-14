@@ -12,11 +12,44 @@ class Webhooks::WhatsappController < ActionController::API
 
     return head :ok if tracking_events_only?
 
-    Webhooks::WhatsappEventsJob.perform_later(params.to_unsafe_hash)
+    payload = params.to_unsafe_hash
+    return head :unauthorized unless route_community_calls(payload)
+
+    Webhooks::WhatsappEventsJob.perform_later(payload) if payload.fetch(:entry, []).any? { |entry| entry.fetch(:changes, []).any? } || payload[:object] != 'whatsapp_business_account'
     head :ok
   end
 
   private
+
+  def route_community_calls(payload)
+    changes = payload.fetch(:entry, []).flat_map { |entry| entry.fetch(:changes, []) }
+    calling_changes = changes.filter_map do |change|
+      next unless change[:field] == 'calls'
+
+      metadata = change.fetch(:value).fetch(:metadata)
+      channel = Whatsapp::WebhookChannelFinderService.new(display_phone_number: metadata[:display_phone_number],
+                                                          phone_number_id: metadata[:phone_number_id]).perform
+      next unless channel&.provider_config&.dig('community_calling_enabled') == true
+
+      [change, channel]
+    end
+    # Authenticate every destination before enqueueing any events in a batched webhook.
+    return false unless calling_changes.all? { |_, channel| community_calling_signature_valid?(channel) }
+
+    calling_changes.each { |change, channel| CommunityCalling::WebhookJob.perform_later(channel.id, change.fetch(:value)) }
+    payload.fetch(:entry, []).each { |entry| entry[:changes] -= calling_changes.map(&:first) }
+    true
+  end
+
+  def community_calling_signature_valid?(channel)
+    signature = request.headers[META_SIGNATURE_HEADER]
+    return false unless signature&.start_with?(META_SIGNATURE_PREFIX)
+
+    [*channel_meta_app_secrets(channel), GlobalConfigService.load('WHATSAPP_APP_SECRET', nil)].compact_blank.any? do |secret|
+      expected = "#{META_SIGNATURE_PREFIX}#{OpenSSL::HMAC.hexdigest('SHA256', secret, meta_request_body)}"
+      ActiveSupport::SecurityUtils.secure_compare(expected, signature)
+    end
+  end
 
   def tracking_events_only?
     return false unless params[:object] == 'whatsapp_business_account'
