@@ -1,0 +1,36 @@
+{
+  "COMMUNITY_CALLING": {
+    "PANEL_TITLE": "WhatsApp calls",
+    "CALL": "Call on WhatsApp",
+    "CLOSE": "Close calls panel",
+    "SETUP_DESCRIPTION": "Enable calling for a WhatsApp Cloud inbox.",
+    "ADMIN_SETUP": "Ask an administrator to enable calling for this inbox.",
+    "TOGGLE_INBOX": "Toggle calling for {name}",
+    "STATUS_ACTIVE": "Call in progress",
+    "STATUS_INCOMING": "Incoming call",
+    "STATUS_CONNECTING": "Connecting",
+    "STATUS_OUTGOING": "Calling",
+    "ANSWER": "Answer",
+    "REJECT": "Decline",
+    "HANG_UP": "End call",
+    "MUTE": "Mute microphone",
+    "UNMUTE": "Unmute microphone",
+    "REQUEST_PERMISSION": "Request call permission",
+    "ERRORS": {
+      "MICROPHONE_DENIED": "Allow microphone access in your browser settings, then try again.",
+      "MICROPHONE_MISSING": "Connect a microphone before starting a WhatsApp call.",
+      "BROWSER_UNSUPPORTED": "This browser cannot start a WhatsApp call.",
+      "SDP_GATHERING": "Could not complete the secure connection. Try again.",
+      "CONNECTION_FAILED": "The secure call connection failed.",
+      "CONNECTION_TIMEOUT": "The call did not connect. Check your network and try again.",
+      "RING_TIMEOUT": "The call was not answered. Try again when the contact is available.",
+      "ACCOUNT_CHANGED": "Your account changed before the call could start. Try again.",
+      "GENERIC": "WhatsApp call failed.",
+      "PERMISSION_REQUIRED": "Call permission is required before you can call this contact.",
+      "PERMISSION_PERMANENT": "This contact must approve WhatsApp calls from your business before you can call.",
+      "PERMISSION_TEMPORARY": "Wait until the temporary call restriction ends, then try again.",
+      "PERMISSION_REQUESTED": "Call permission was requested. Try again after the contact approves it.",
+      "RING_BLOCKED": "Your browser blocked call audio. Answer the call or allow sound for this site."
+    }
+  }
+}

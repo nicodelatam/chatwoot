@@ -12,11 +12,66 @@ class Webhooks::WhatsappController < ActionController::API
 
     return head :ok if tracking_events_only?
 
-    Webhooks::WhatsappEventsJob.perform_later(params.to_unsafe_hash)
+    payload = params.to_unsafe_hash
+    return head :unauthorized unless route_community_calls(payload)
+
+    has_events = payload.fetch(:entry, []).any? { |entry| entry.fetch(:changes, []).any? }
+    Webhooks::WhatsappEventsJob.perform_later(payload) unless @community_calls_routed && !has_events
     head :ok
   end
 
   private
+
+  def route_community_calls(payload)
+    calling_changes = community_calling_changes(payload)
+    return false unless community_calling_signatures_valid?(calling_changes)
+
+    enqueue_community_calls(calling_changes)
+    @community_calls_routed = calling_changes.any?
+    payload.fetch(:entry, []).each { |entry| entry[:changes] -= calling_changes.map(&:first) }
+    true
+  end
+
+  def community_calling_changes(payload)
+    changes = payload.fetch(:entry, []).flat_map { |entry| entry.fetch(:changes, []) }
+    changes.filter_map do |change|
+      next unless change[:field] == 'calls'
+
+      channel = community_calling_channel(change)
+      next unless channel&.provider_config&.dig('community_calling_enabled') == true
+
+      [change, channel]
+    end
+  end
+
+  def community_calling_channel(change)
+    metadata = change.dig(:value, :metadata)
+    return if metadata.blank?
+
+    Whatsapp::WebhookChannelFinderService.new(display_phone_number: metadata[:display_phone_number],
+                                              phone_number_id: metadata[:phone_number_id]).perform
+  end
+
+  def community_calling_signatures_valid?(calling_changes)
+    # Authenticate every destination before enqueueing any events in a batched webhook.
+    calling_changes.all? { |_, channel| community_calling_signature_valid?(channel) }
+  end
+
+  def enqueue_community_calls(calling_changes)
+    calling_changes.each do |change, channel|
+      CommunityCalling::WebhookJob.perform_later(channel.id, change.fetch(:value))
+    end
+  end
+
+  def community_calling_signature_valid?(channel)
+    signature = request.headers[META_SIGNATURE_HEADER]
+    return false unless signature&.start_with?(META_SIGNATURE_PREFIX)
+
+    [*channel_meta_app_secrets(channel), GlobalConfigService.load('WHATSAPP_APP_SECRET', nil)].compact_blank.any? do |secret|
+      expected = "#{META_SIGNATURE_PREFIX}#{OpenSSL::HMAC.hexdigest('SHA256', secret, meta_request_body)}"
+      ActiveSupport::SecurityUtils.secure_compare(expected, signature)
+    end
+  end
 
   def tracking_events_only?
     return false unless params[:object] == 'whatsapp_business_account'

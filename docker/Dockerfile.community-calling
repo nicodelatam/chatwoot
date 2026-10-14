@@ -1,0 +1,25 @@
+FROM node:24-alpine AS frontend
+WORKDIR /app
+RUN npm install -g pnpm@10.2.0
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY . .
+RUN NODE_ENV=production pnpm exec vite build
+
+# Reuse the released Community runtime and its compiled Ruby dependencies.
+# Any lockfile additions are installed below; Enterprise code is excluded from the build context by CI.
+FROM chatwoot/chatwoot:v4.18.0-ce@sha256:faaa58a911cda8f2ab9d717ddf8ca4332163b07da4c5da10711d896e5d667442
+ARG SOURCE_COMMIT
+ENV CW_EDITION=ce DISABLE_ENTERPRISE=true
+WORKDIR /app
+COPY Gemfile Gemfile.lock ./
+RUN bundle install --jobs=2 --retry=3
+COPY app ./app
+COPY config ./config
+COPY db ./db
+COPY lib ./lib
+COPY bin ./bin
+COPY public ./public
+COPY Rakefile LICENSE ./
+COPY --from=frontend /app/public/vite ./public/vite
+RUN test ! -d /app/enterprise && printf '%s\n' "$SOURCE_COMMIT" > .git_sha

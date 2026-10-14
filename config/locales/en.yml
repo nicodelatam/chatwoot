@@ -737,3 +737,12 @@ en:
         test_email:
           queued: 'Test email on its way to %{email}. Ask the user to check their inbox and spam folder.'
           subject: 'Test email from %{brand_name} support'
+  community_calling:
+    incoming: 'Incoming'
+    outgoing: 'Outgoing'
+    completed: '%{direction} WhatsApp call completed.'
+    rejected: '%{direction} WhatsApp call declined.'
+    missed: '%{direction} WhatsApp call was not answered.'
+    failed: '%{direction} WhatsApp call could not connect.'
+    permission_request: 'May we call you on WhatsApp to help with your support request?'
+    permission_sent: 'WhatsApp call permission requested from the contact.'

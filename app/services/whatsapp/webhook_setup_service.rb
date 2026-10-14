@@ -92,13 +92,13 @@ class Whatsapp::WebhookSetupService
   # any sibling on the same WABA has voice on — otherwise a non-calling sibling's setup would
   # rewrite the shared subscription and drop calls for a calling-enabled sibling.
   def calls_enabled_on_waba?
-    return true if @channel.provider_config['calling_enabled']
+    return true if @channel.provider_config['calling_enabled'] || @channel.provider_config['community_calling_enabled'] == true
 
     Channel::Whatsapp
       .where(provider: 'whatsapp_cloud')
       .where.not(id: @channel.id)
       .where("provider_config->>'business_account_id' = ?", @waba_id)
-      .where("provider_config->>'calling_enabled' = 'true'")
+      .where("provider_config->>'calling_enabled' = 'true' OR provider_config->>'community_calling_enabled' = 'true'")
       .exists?
   end
 

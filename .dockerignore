@@ -11,6 +11,8 @@ tmp
 .codeclimate.yml
 public/packs
 node_modules
+.codex
+.playwright-cli
 vendor/bundle
 .DS_Store
 *.swp

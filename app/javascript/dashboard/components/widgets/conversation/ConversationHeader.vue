@@ -9,6 +9,7 @@ import MoreActions from './MoreActions.vue';
 import Avatar from 'next/avatar/Avatar.vue';
 import SLACardLabel from './components/SLACardLabel.vue';
 import ConversationCallButton from './ConversationCallButton.vue';
+import CommunityConversationCallButton from 'dashboard/components-next/CommunityCalling/CommunityConversationCallButton.vue';
 import wootConstants from 'dashboard/constants/globals';
 import { conversationListPageURL } from 'dashboard/helper/URLHelper';
 import { snoozedReopenTime } from 'dashboard/helper/snoozeHelpers';
@@ -16,6 +17,7 @@ import { useInbox } from 'dashboard/composables/useInbox';
 import { useAlert } from 'dashboard/composables';
 import { useI18n } from 'vue-i18n';
 import { copyTextToClipboard } from 'shared/helpers/clipboard';
+import { useCommunityWhatsappCalling } from 'dashboard/composables/useCommunityWhatsappCalling';
 
 const props = defineProps({
   chat: {
@@ -34,6 +36,7 @@ const route = useRoute();
 const conversationHeader = ref(null);
 const { width } = useElementSize(conversationHeader);
 const { isAWebWidgetInbox } = useInbox();
+const communityCalling = useCommunityWhatsappCalling();
 
 const currentChat = computed(() => store.getters.getSelectedChat);
 const accountId = computed(() => store.getters.getCurrentAccountId);
@@ -88,6 +91,13 @@ const inbox = computed(() => {
   const { inbox_id: inboxId } = props.chat;
   return store.getters['inboxes/getInbox'](inboxId);
 });
+
+const usesCommunityCalling = computed(
+  () =>
+    inbox.value?.channel_type === 'Channel::Whatsapp' &&
+    inbox.value?.provider === 'whatsapp_cloud' &&
+    communityCalling.configuredInboxIds.value.has(inbox.value?.id)
+);
 
 const hasMultipleInboxes = computed(
   () => store.getters['inboxes/getInboxes'].length > 1
@@ -153,9 +163,17 @@ const copyConversationId = async () => {
           >
             {{ `#${chat.id}` }}
           </button>
-          <span v-if="hasMultipleInboxes">•</span>
+          <span
+            v-if="hasMultipleInboxes"
+            class="mx-1 size-1 rounded-full bg-n-slate-7"
+            aria-hidden="true"
+          />
           <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />
-          <span v-if="isSnoozed">•</span>
+          <span
+            v-if="isSnoozed"
+            class="mx-1 size-1 rounded-full bg-n-slate-7"
+            aria-hidden="true"
+          />
           <span v-if="isSnoozed" class="font-medium text-n-amber-10">
             {{ snoozedDisplayText }}
           </span>
@@ -172,7 +190,12 @@ const copyConversationId = async () => {
         :parent-width="width"
         class="hidden md:flex"
       />
-      <ConversationCallButton :inbox="inbox" :chat="currentChat" />
+      <CommunityConversationCallButton :inbox="inbox" :chat="currentChat" />
+      <ConversationCallButton
+        v-if="!usesCommunityCalling"
+        :inbox="inbox"
+        :chat="currentChat"
+      />
       <MoreActions :conversation-id="currentChat.id" />
     </div>
   </div>

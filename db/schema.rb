@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_09_24_000000) do
+ActiveRecord::Schema[7.1].define(version: 2026_10_14_140000) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -754,6 +754,28 @@ ActiveRecord::Schema[7.1].define(version: 2026_09_24_000000) do
     t.string "phone_number_health_error", limit: 500
     t.index ["phone_number_health_checked_at"], name: "index_channel_whatsapp_on_phone_number_health_checked_at"
     t.index ["phone_number"], name: "index_channel_whatsapp_on_phone_number", unique: true
+  end
+
+  create_table "community_whatsapp_calls", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "conversation_id", null: false
+    t.bigint "user_id"
+    t.string "session_id"
+    t.string "provider_call_id", null: false
+    t.string "direction", null: false
+    t.string "status", default: "ringing", null: false
+    t.text "sdp_offer"
+    t.text "sdp_answer"
+    t.datetime "answered_at"
+    t.datetime "ended_at"
+    t.datetime "last_seen_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "user_id"], name: "idx_community_calls_active_agent", unique: true, where: "((user_id IS NOT NULL) AND ((status)::text = ANY ((ARRAY['ringing'::character varying, 'connecting'::character varying, 'active'::character varying])::text[])))"
+    t.index ["conversation_id"], name: "idx_community_calls_active_conversation", unique: true, where: "((status)::text = ANY ((ARRAY['ringing'::character varying, 'connecting'::character varying, 'active'::character varying])::text[]))"
+    t.index ["conversation_id"], name: "index_community_whatsapp_calls_on_conversation_id"
+    t.index ["inbox_id", "provider_call_id"], name: "idx_on_inbox_id_provider_call_id_a9b4e20f7f", unique: true
   end
 
   create_table "companies", force: :cascade do |t|
