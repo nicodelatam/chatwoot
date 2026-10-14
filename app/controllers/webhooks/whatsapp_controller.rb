@@ -16,7 +16,7 @@ class Webhooks::WhatsappController < ActionController::API
     return head :unauthorized unless route_community_calls(payload)
 
     has_events = payload.fetch(:entry, []).any? { |entry| entry.fetch(:changes, []).any? }
-    Webhooks::WhatsappEventsJob.perform_later(payload) if has_events || payload[:object] != 'whatsapp_business_account'
+    Webhooks::WhatsappEventsJob.perform_later(payload) unless @community_calls_routed && !has_events
     head :ok
   end
 
@@ -27,6 +27,7 @@ class Webhooks::WhatsappController < ActionController::API
     return false unless community_calling_signatures_valid?(calling_changes)
 
     enqueue_community_calls(calling_changes)
+    @community_calls_routed = calling_changes.any?
     payload.fetch(:entry, []).each { |entry| entry[:changes] -= calling_changes.map(&:first) }
     true
   end
@@ -36,7 +37,8 @@ class Webhooks::WhatsappController < ActionController::API
     changes.filter_map do |change|
       next unless change[:field] == 'calls'
 
-      metadata = change.fetch(:value).fetch(:metadata)
+      metadata = change.dig(:value, :metadata)
+      next if metadata.blank?
       channel = Whatsapp::WebhookChannelFinderService.new(display_phone_number: metadata[:display_phone_number],
                                                           phone_number_id: metadata[:phone_number_id]).perform
       next unless channel&.provider_config&.dig('community_calling_enabled') == true
