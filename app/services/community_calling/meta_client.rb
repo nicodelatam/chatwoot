@@ -10,7 +10,10 @@ class CommunityCalling::MetaClient
   end
 
   def enable
-    raise CustomExceptions::CommunityCallingError, 'SIP is enabled on this number. Use a separate Cloud API number for browser calling.' if settings.dig('calling', 'sip', 'status') == 'ENABLED'
+    if settings.dig('calling', 'sip', 'status') == 'ENABLED'
+      raise CustomExceptions::CommunityCallingError,
+            'SIP is enabled on this number. Use a separate Cloud API number for browser calling.'
+    end
 
     request(:post, 'settings', calling: { status: 'ENABLED' })
   end
@@ -25,11 +28,14 @@ class CommunityCalling::MetaClient
   end
 
   def request_permission(source_id)
-    request(:post, 'messages', {
+    payload = {
       messaging_product: 'whatsapp', recipient_type: 'individual', **recipient(source_id), type: 'interactive',
-      interactive: { type: 'call_permission_request', action: { name: 'call_permission_request' },
-                     body: { text: I18n.t('community_calling.permission_request') } }
-    })
+      interactive: {
+        type: 'call_permission_request', action: { name: 'call_permission_request' },
+        body: { text: I18n.t('community_calling.permission_request') }
+      }
+    }
+    request(:post, 'messages', payload)
   end
 
   def connect(source_id, sdp, callback_data)
@@ -50,18 +56,29 @@ class CommunityCalling::MetaClient
   end
 
   def request(method, path, payload = {})
-    options = { headers: { 'Authorization' => "Bearer #{@channel.provider_config.fetch('api_key')}", 'Content-Type' => 'application/json' },
-                timeout: 10 }
+    options = {
+      headers: {
+        'Authorization' => "Bearer #{@channel.provider_config.fetch('api_key')}",
+        'Content-Type' => 'application/json'
+      },
+      timeout: 10
+    }
     options[method == :get ? :query : :body] = method == :get ? payload : payload.to_json
     base = ENV.fetch('WHATSAPP_CLOUD_BASE_URL', 'https://graph.facebook.com')
-    response = HTTParty.public_send(method, "#{base}/v24.0/#{@channel.provider_config.fetch('phone_number_id')}/#{path}", options)
-    unless response.success?
-      code = response.parsed_response.dig('error', 'code') if response.parsed_response.is_a?(Hash)
-      raise CustomExceptions::CommunityCallingError.new("Meta rejected the calling request (HTTP #{response.code}, code #{code}). Check number eligibility, permissions and calling settings.", 'meta_error')
-    end
-
-    response.parsed_response
+    url = "#{base}/v24.0/#{@channel.provider_config.fetch('phone_number_id')}/#{path}"
+    response = HTTParty.public_send(method, url, options)
+    parse_response(response)
   rescue Net::OpenTimeout, Net::ReadTimeout, SocketError
-    raise CustomExceptions::CommunityCallingError.new('Meta could not be reached. Check the call status before trying again.', 'meta_unavailable')
+    message = 'Meta could not be reached. Check the call status before trying again.'
+    raise CustomExceptions::CommunityCallingError.new(message, 'meta_unavailable')
+  end
+
+  def parse_response(response)
+    return response.parsed_response if response.success?
+
+    code = response.parsed_response.dig('error', 'code') if response.parsed_response.is_a?(Hash)
+    message = "Meta rejected the calling request (HTTP #{response.code}, code #{code}). " \
+              'Check number eligibility, permissions and calling settings.'
+    raise CustomExceptions::CommunityCallingError.new(message, 'meta_error')
   end
 end

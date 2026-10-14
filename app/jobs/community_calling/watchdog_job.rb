@@ -12,18 +12,38 @@ class CommunityCalling::WatchdogJob < ApplicationJob
     return unless call&.ongoing?
 
     call.with_lock do
-      return unless call.ongoing?
+      next unless call.ongoing?
 
-      expired = call.status == 'ringing' && call.created_at < 90.seconds.ago
-      expired ||= call.user_id.present? && call.last_seen_at && call.last_seen_at < 60.seconds.ago
-      if expired
-        unless call.provider_call_id.start_with?('pending:')
-          CommunityCalling::MetaClient.new(call.inbox.channel).control(call, call.direction == 'incoming' && call.status == 'ringing' ? 'reject' : 'terminate')
-        end
-        call.finish!(call.answered_at ? 'completed' : 'missed')
-      else
-        self.class.set(wait: 30.seconds).perform_later(call.id)
-      end
+      expire_call(call) if expired?(call)
+      schedule_next_check(call) if call.ongoing?
     end
+  end
+
+  private
+
+  def expired?(call)
+    ringing_call_expired?(call) || browser_session_expired?(call)
+  end
+
+  def ringing_call_expired?(call)
+    call.status == 'ringing' && call.created_at < 90.seconds.ago
+  end
+
+  def browser_session_expired?(call)
+    call.user_id.present? && call.last_seen_at && call.last_seen_at < 60.seconds.ago
+  end
+
+  def expire_call(call)
+    terminate_remote_call(call) unless call.provider_call_id.start_with?('pending:')
+    call.finish!(call.answered_at ? 'completed' : 'missed')
+  end
+
+  def terminate_remote_call(call)
+    action = call.direction == 'incoming' && call.status == 'ringing' ? 'reject' : 'terminate'
+    CommunityCalling::MetaClient.new(call.inbox.channel).control(call, action)
+  end
+
+  def schedule_next_check(call)
+    self.class.set(wait: 30.seconds).perform_later(call.id)
   end
 end

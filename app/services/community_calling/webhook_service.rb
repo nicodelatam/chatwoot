@@ -12,28 +12,39 @@ class CommunityCalling::WebhookService
   private
 
   def process_call(event)
-    if event[:direction] == 'BUSINESS_INITIATED' || event.dig(:session, :sdp_type) == 'answer'
-      call = find_outgoing(event)
-    else
-      call = calls.find_by(provider_call_id: event.fetch(:id)) || build_incoming(event)
-    end
+    call = outgoing_call_event?(event) ? find_outgoing(event) : find_or_build_incoming(event)
+    call.with_lock { process_call_event(call, event) }
+  end
 
-    call.with_lock do
-      return unless call.ongoing?
+  def outgoing_call_event?(event)
+    event[:direction] == 'BUSINESS_INITIATED' || event.dig(:session, :sdp_type) == 'answer'
+  end
 
-      if event[:event] == 'terminate'
-        status = event[:status] == 'FAILED' ? 'failed' : (call.answered_at ? 'completed' : 'missed')
-        call.finish!(status)
-      elsif event[:event] == 'connect' && event.dig(:session, :sdp_type) == 'answer'
-        call.update!(sdp_answer: event.fetch(:session).fetch(:sdp))
-      end
+  def find_or_build_incoming(event)
+    calls.find_by(provider_call_id: event.fetch(:id)) || build_incoming(event)
+  end
+
+  def process_call_event(call, event)
+    return unless call.ongoing?
+
+    case event[:event]
+    when 'terminate'
+      call.finish!(termination_status(call, event))
+    when 'connect'
+      call.update!(sdp_answer: event.fetch(:session).fetch(:sdp)) if event.dig(:session, :sdp_type) == 'answer'
     end
+  end
+
+  def termination_status(call, event)
+    return 'failed' if event[:status] == 'FAILED'
+
+    call.answered_at ? 'completed' : 'missed'
   end
 
   def process_status(event)
     call = find_outgoing(event)
     call.with_lock do
-      return unless call.ongoing?
+      next unless call.ongoing?
 
       case event[:status]
       when 'ACCEPTED'
@@ -66,9 +77,7 @@ class CommunityCalling::WebhookService
 
   def build_incoming(event)
     contact_inbox = incoming_contact_inbox(event)
-    conversation = contact_inbox.conversations.where.not(status: :resolved).order(:id).last ||
-                   Conversation.create!(account: @channel.account, inbox: @channel.inbox, contact: contact_inbox.contact,
-                                        contact_inbox: contact_inbox)
+    conversation = find_or_create_conversation(contact_inbox)
     call = calls.create!(account: @channel.account, conversation: conversation, direction: 'incoming',
                          provider_call_id: event.fetch(:id), sdp_offer: event.dig(:session, :sdp))
     CommunityCalling::WatchdogJob.set(wait: 30.seconds).perform_later(call.id)
@@ -83,18 +92,39 @@ class CommunityCalling::WebhookService
   end
 
   def incoming_contact_inbox(event)
-    contact = Array(@value[:contacts]).find do |candidate|
-      [candidate[:wa_id], candidate[:user_id], candidate[:parent_user_id]].compact.intersect?(
-        [event[:from], event[:from_user_id], event[:from_parent_user_id]].compact
-      )
-    end || {}
-    source_id = [event[:from_parent_user_id], contact[:parent_user_id], event[:from_user_id], contact[:user_id], event[:from]].compact_blank.first
+    contact = matching_contact(event)
+    source_id = contact_source_id(event, contact)
     raise ArgumentError, 'Missing WhatsApp calling contact identity' unless source_id
 
     phone = event[:from].presence || contact[:wa_id].presence
     ContactInboxWithContactBuilder.new(
       inbox: @channel.inbox, source_id: source_id,
-      contact_attributes: { name: contact.dig(:profile, :name) || phone || source_id, phone_number: phone && "+#{phone.delete_prefix('+')}" }
+      contact_attributes: {
+        name: contact.dig(:profile, :name) || phone || source_id,
+        phone_number: phone && "+#{phone.delete_prefix('+')}"
+      }
     ).perform
+  end
+
+  def matching_contact(event)
+    Array(@value[:contacts]).find do |candidate|
+      [candidate[:wa_id], candidate[:user_id], candidate[:parent_user_id]].compact.intersect?(
+        [event[:from], event[:from_user_id], event[:from_parent_user_id]].compact
+      )
+    end || {}
+  end
+
+  def contact_source_id(event, contact)
+    [
+      event[:from_parent_user_id], contact[:parent_user_id], event[:from_user_id], contact[:user_id], event[:from]
+    ].compact_blank.first
+  end
+
+  def find_or_create_conversation(contact_inbox)
+    contact_inbox.conversations.where.not(status: :resolved).order(:id).last ||
+      Conversation.create!(
+        account: @channel.account, inbox: @channel.inbox, contact: contact_inbox.contact,
+        contact_inbox: contact_inbox
+      )
   end
 end

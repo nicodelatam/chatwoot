@@ -15,15 +15,25 @@ class Webhooks::WhatsappController < ActionController::API
     payload = params.to_unsafe_hash
     return head :unauthorized unless route_community_calls(payload)
 
-    Webhooks::WhatsappEventsJob.perform_later(payload) if payload.fetch(:entry, []).any? { |entry| entry.fetch(:changes, []).any? } || payload[:object] != 'whatsapp_business_account'
+    has_events = payload.fetch(:entry, []).any? { |entry| entry.fetch(:changes, []).any? }
+    Webhooks::WhatsappEventsJob.perform_later(payload) if has_events || payload[:object] != 'whatsapp_business_account'
     head :ok
   end
 
   private
 
   def route_community_calls(payload)
+    calling_changes = community_calling_changes(payload)
+    return false unless community_calling_signatures_valid?(calling_changes)
+
+    enqueue_community_calls(calling_changes)
+    payload.fetch(:entry, []).each { |entry| entry[:changes] -= calling_changes.map(&:first) }
+    true
+  end
+
+  def community_calling_changes(payload)
     changes = payload.fetch(:entry, []).flat_map { |entry| entry.fetch(:changes, []) }
-    calling_changes = changes.filter_map do |change|
+    changes.filter_map do |change|
       next unless change[:field] == 'calls'
 
       metadata = change.fetch(:value).fetch(:metadata)
@@ -33,12 +43,17 @@ class Webhooks::WhatsappController < ActionController::API
 
       [change, channel]
     end
-    # Authenticate every destination before enqueueing any events in a batched webhook.
-    return false unless calling_changes.all? { |_, channel| community_calling_signature_valid?(channel) }
+  end
 
-    calling_changes.each { |change, channel| CommunityCalling::WebhookJob.perform_later(channel.id, change.fetch(:value)) }
-    payload.fetch(:entry, []).each { |entry| entry[:changes] -= calling_changes.map(&:first) }
-    true
+  def community_calling_signatures_valid?(calling_changes)
+    # Authenticate every destination before enqueueing any events in a batched webhook.
+    calling_changes.all? { |_, channel| community_calling_signature_valid?(channel) }
+  end
+
+  def enqueue_community_calls(calling_changes)
+    calling_changes.each do |change, channel|
+      CommunityCalling::WebhookJob.perform_later(channel.id, change.fetch(:value))
+    end
   end
 
   def community_calling_signature_valid?(channel)

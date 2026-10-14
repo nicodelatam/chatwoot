@@ -58,7 +58,7 @@ Microphone tracks stay disabled until acceptance. SDP is filtered from request l
 
 ## Build and rollout
 
-The **Community WhatsApp calling** workflow validates the frontend, builds Community Edition, checks Ruby syntax, migrates an isolated PostgreSQL database, checks Rails routes, and publishes `ghcr.io/nicodelatam/chatwoot-community:<commit-sha>` only after validation succeeds. Dispatch the workflow on the reviewed commit for later releases.
+The **Community WhatsApp calling** workflow validates the frontend, builds Community Edition, checks Ruby syntax, migrates an isolated PostgreSQL database, checks Rails routes, and publishes `ghcr.io/nicodelatam/chatwoot-community:<commit-sha>` only after validation succeeds. The dedicated Dockerfile uses the official `v4.18.0-ce` runtime pinned by digest, installs lockfile additions, and rebuilds this fork's browser assets. Dispatch the workflow on the reviewed commit for later releases.
 
 Pin both Rails and Sidekiq in `chatwoot-nico` to the same verified image SHA. Keep the existing database, Redis, storage, secrets and domains. The normal `db:chatwoot_prepare` startup applies the additive call-table migration. Confirm backup freshness before production deployment. Retain the previous image reference for rollback; leave the additive table in place when reverting code.
 

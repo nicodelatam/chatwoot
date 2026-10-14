@@ -101,6 +101,7 @@ describe('Dashboard', () => {
           CopilotLauncher: true,
           CopilotContainer: true,
           FloatingCallWidget: true,
+          CommunityCallingPanel: true,
           AddAccountModal: true,
           WootKeyShortcutModal: true,
         },

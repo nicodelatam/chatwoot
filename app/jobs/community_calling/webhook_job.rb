@@ -1,5 +1,6 @@
 class CommunityCalling::WebhookJob < MutexApplicationJob
   queue_as :default
+  self.log_arguments = false
   retry_on ActiveRecord::RecordNotFound, wait: 2.seconds, attempts: 10
   retry_on LockAcquisitionError, wait: 2.seconds, attempts: 20
 

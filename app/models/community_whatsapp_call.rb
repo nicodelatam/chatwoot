@@ -30,7 +30,8 @@ class CommunityWhatsappCall < ApplicationRecord
 
   def dashboard_payload(include_session: false)
     payload = slice(:id, :provider_call_id, :inbox_id, :direction, :status, :user_id)
-    payload.merge!(conversation_id: conversation.display_id, contact_name: conversation.contact.name)
+    payload[:conversation_id] = conversation.display_id
+    payload[:contact_name] = conversation.contact.name
     payload.merge!(slice(:sdp_offer, :sdp_answer)) if include_session
     payload
   end

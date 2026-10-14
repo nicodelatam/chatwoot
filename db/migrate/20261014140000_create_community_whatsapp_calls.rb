@@ -17,11 +17,19 @@ class CreateCommunityWhatsappCalls < ActiveRecord::Migration[7.1]
       t.timestamps
     end
 
+    add_indexes
+  end
+
+  private
+
+  def add_indexes
     add_index :community_whatsapp_calls, [:inbox_id, :provider_call_id], unique: true
     add_index :community_whatsapp_calls, :conversation_id
     add_index :community_whatsapp_calls, [:account_id, :user_id], unique: true,
-              where: "user_id IS NOT NULL AND status IN ('ringing', 'connecting', 'active')", name: 'idx_community_calls_active_agent'
+                                                                  where: "user_id IS NOT NULL AND status IN ('ringing', 'connecting', 'active')",
+                                                                  name: 'idx_community_calls_active_agent'
     add_index :community_whatsapp_calls, :conversation_id, unique: true,
-              where: "status IN ('ringing', 'connecting', 'active')", name: 'idx_community_calls_active_conversation'
+                                                           where: "status IN ('ringing', 'connecting', 'active')",
+                                                           name: 'idx_community_calls_active_conversation'
   end
 end

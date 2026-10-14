@@ -55,8 +55,7 @@ jobs:
         run: |
           test "$PWD" = "$GITHUB_WORKSPACE"
           rm -rf enterprise spec/enterprise
-          printf '\nENV CW_EDITION="ce"\nENV DISABLE_ENTERPRISE="true"\n' >> docker/Dockerfile
-          docker build -f docker/Dockerfile -t community-calling-validation .
+          docker build -f docker/Dockerfile.community-calling --build-arg SOURCE_COMMIT=${{ github.sha }} -t community-calling-validation .
       - name: Ruby syntax
         run: |
           docker run --rm community-calling-validation sh -c '
