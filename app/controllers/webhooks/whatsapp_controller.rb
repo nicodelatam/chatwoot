@@ -37,14 +37,19 @@ class Webhooks::WhatsappController < ActionController::API
     changes.filter_map do |change|
       next unless change[:field] == 'calls'
 
-      metadata = change.dig(:value, :metadata)
-      next if metadata.blank?
-      channel = Whatsapp::WebhookChannelFinderService.new(display_phone_number: metadata[:display_phone_number],
-                                                          phone_number_id: metadata[:phone_number_id]).perform
+      channel = community_calling_channel(change)
       next unless channel&.provider_config&.dig('community_calling_enabled') == true
 
       [change, channel]
     end
+  end
+
+  def community_calling_channel(change)
+    metadata = change.dig(:value, :metadata)
+    return if metadata.blank?
+
+    Whatsapp::WebhookChannelFinderService.new(display_phone_number: metadata[:display_phone_number],
+                                              phone_number_id: metadata[:phone_number_id]).perform
   end
 
   def community_calling_signatures_valid?(calling_changes)
