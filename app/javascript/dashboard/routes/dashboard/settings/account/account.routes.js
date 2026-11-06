@@ -1,9 +1,24 @@
 import { frontendURL } from '../../../../helper/URLHelper';
 import Index from './Index.vue';
+import Branding from './Branding.vue';
 import SettingsWrapper from '../SettingsWrapper.vue';
 
 export default {
   routes: [
+    {
+      path: frontendURL('accounts/:accountId/settings/branding'),
+      meta: { permissions: ['administrator'] },
+      component: SettingsWrapper,
+      props: { keepAlive: false },
+      children: [
+        {
+          path: '',
+          name: 'workspace_branding_index',
+          component: Branding,
+          meta: { permissions: ['administrator'] },
+        },
+      ],
+    },
     {
       path: frontendURL('accounts/:accountId/settings/general'),
       meta: {

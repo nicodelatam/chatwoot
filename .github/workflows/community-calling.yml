@@ -1,8 +1,8 @@
-name: Community WhatsApp calling
+name: Community calling and workspace branding
 
 on:
   push:
-    branches: [main, feat/upgrade-4.19.1-community]
+    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -45,10 +45,18 @@ jobs:
           app/javascript/dashboard/routes/dashboard/Dashboard.vue
           app/javascript/dashboard/components/widgets/conversation/ConversationHeader.vue
           app/javascript/dashboard/i18n/locale/en/index.js
+          app/javascript/dashboard/api/workspaceBranding.js
+          app/javascript/dashboard/composables/useWorkspaceBranding.js
+          app/javascript/dashboard/routes/dashboard/settings/account/Branding.vue
+          app/javascript/shared/helpers/workspaceBranding.js
+          app/javascript/shared/store/globalConfig.js
+          theme/workspaceBranding.js
       - name: Existing conversation frontend regression tests
         run: >-
           pnpm exec vitest run app/javascript/dashboard/components/widgets/conversation/specs/ConversationCard.spec.js
           app/javascript/dashboard/components/widgets/conversation/specs/ContactConversationLink.spec.js
+          app/javascript/shared/composables/specs/useBranding.spec.js
+          app/javascript/v3/views/login/Index.spec.js
         env:
           TZ: UTC
       - name: Build Community Edition only
@@ -59,7 +67,7 @@ jobs:
       - name: Ruby syntax
         run: |
           docker run --rm community-calling-validation sh -c '
-            for file in app/models/community_whatsapp_call.rb app/controllers/api/v1/accounts/community_whatsapp_calls_controller.rb app/services/community_calling/*.rb app/jobs/community_calling/*.rb lib/custom_exceptions/community_calling_error.rb db/migrate/20261014140000_create_community_whatsapp_calls.rb; do ruby -c "$file" || exit; done
+            for file in app/models/workspace_branding.rb app/controllers/api/v1/accounts/workspace_branding_controller.rb app/models/community_whatsapp_call.rb app/controllers/api/v1/accounts/community_whatsapp_calls_controller.rb app/services/community_calling/*.rb app/jobs/community_calling/*.rb lib/custom_exceptions/community_calling_error.rb db/migrate/20261014140000_create_community_whatsapp_calls.rb; do ruby -c "$file" || exit; done
             test ! -d /app/enterprise'
       - name: Migrate isolated database and validate Rails routes
         run: |

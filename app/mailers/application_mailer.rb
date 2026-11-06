@@ -12,7 +12,7 @@ class ApplicationMailer < ActionMailer::Base
   helper :frontend_urls
   helper do
     def global_config
-      @global_config ||= GlobalConfig.get('BRAND_NAME', 'BRAND_URL')
+      @global_config ||= (Current.account&.workspace_branding || WorkspaceBranding.new).global_config
     end
   end
 
@@ -54,7 +54,7 @@ class ApplicationMailer < ActionMailer::Base
   def liquid_locals
     # expose variables you want to be exposed in liquid
     locals = {
-      global_config: GlobalConfig.get('BRAND_NAME', 'BRAND_URL'),
+      global_config: (Current.account&.workspace_branding || WorkspaceBranding.new).global_config,
       action_url: @action_url
     }
 

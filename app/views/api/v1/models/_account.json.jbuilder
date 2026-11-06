@@ -1,3 +1,4 @@
+json.workspace_branding resource.workspace_branding.as_json
 json.settings resource.settings
 json.reporting_timezone ActiveSupport::TimeZone[resource.reporting_timezone].tzinfo.name if resource.reporting_timezone.present?
 json.created_at resource.created_at

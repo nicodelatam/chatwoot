@@ -398,23 +398,25 @@ export default {
 
 <template>
   <main
-    class="flex flex-col w-full min-h-screen py-20 bg-n-brand/5 dark:bg-n-background sm:px-6 lg:px-8"
+    class="flex flex-col justify-center w-full min-h-screen bg-n-background px-4 py-12 sm:px-6 lg:px-8"
   >
-    <section class="max-w-5xl mx-auto">
-      <img
-        :src="globalConfig.logo"
-        :alt="globalConfig.installationName"
-        class="block w-auto h-8 mx-auto dark:hidden"
-      />
-      <img
-        v-if="globalConfig.logoDark"
-        :src="globalConfig.logoDark"
-        :alt="globalConfig.installationName"
-        class="hidden w-auto h-8 mx-auto dark:block"
-      />
-      <h2 class="mt-6 text-3xl font-medium text-center text-n-slate-12">
+    <section class="w-full max-w-lg mx-auto">
+      <div class="flex items-center justify-center gap-3">
+        <img
+          :src="globalConfig.logo"
+          :alt="globalConfig.installationName"
+          class="size-12 object-contain"
+        />
+        <span class="text-3xl font-semibold tracking-tight text-n-slate-12">{{
+          globalConfig.installationName
+        }}</span>
+      </div>
+      <h2 class="mt-8 text-xl font-semibold text-center text-n-slate-12">
         {{ replaceInstallationName($t('LOGIN.TITLE')) }}
       </h2>
+      <p class="mt-3 text-sm text-center text-n-slate-11">
+        {{ $t('WORKSPACE_BRANDING.LOGIN_DESCRIPTION') }}
+      </p>
       <p v-if="showSignupLink" class="mt-3 text-sm text-center text-n-slate-11">
         {{ $t('COMMON.OR') }}
         <router-link :to="signupRoute" class="lowercase text-link text-n-brand">
@@ -458,9 +460,9 @@ export default {
     <!-- Regular Login Section -->
     <section
       v-else
-      class="bg-white shadow sm:mx-auto mt-11 sm:w-full sm:max-w-lg dark:bg-n-solid-2 p-11 sm:shadow-lg sm:rounded-lg"
+      class="mx-auto mt-8 w-full max-w-lg rounded-3xl border border-n-weak bg-n-solid-1 p-7 shadow-sm sm:p-10"
       :class="{
-        'mb-8 mt-15': !showGoogleOAuth,
+        'mb-8': !showGoogleOAuth,
         'animate-wiggle': loginApi.hasErrored,
       }"
     >

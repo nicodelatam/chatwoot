@@ -1,3 +1,4 @@
+import { workspaceTokens } from './theme/workspaceBranding';
 const { slateDark } = require('@radix-ui/colors');
 import { colors } from './theme/colors';
 import { icons } from './theme/icons';
@@ -303,6 +304,12 @@ const tailwindConfig = {
     },
   },
   plugins: [
+    plugin(({ addBase }) =>
+      addBase({
+        ':root:root': workspaceTokens(),
+        ':root.dark:root, body.dark': workspaceTokens(undefined, true),
+      })
+    ),
     // eslint-disable-next-line
     require('@tailwindcss/typography'),
     iconsPlugin({

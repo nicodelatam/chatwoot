@@ -1,3 +1,4 @@
+import { defaultBranding } from '../../../../theme/workspaceBranding';
 import { parseBoolean } from '@chatwoot/utils';
 import { resolveMaximumFileUploadSize } from 'shared/helpers/FileHelper';
 
@@ -34,6 +35,7 @@ const {
 } = window.globalConfig || {};
 
 const state = {
+  workspaceBranding: window.globalConfig?.WORKSPACE_BRANDING,
   apiChannelName,
   apiChannelThumbnail,
   appVersion,
@@ -66,7 +68,24 @@ const state = {
 };
 
 export const getters = {
-  get: $state => $state,
+  get: ($state, _getters, rootState = {}, rootGetters = {}) => {
+    const accountId = rootState.route?.params?.accountId;
+    const brand = accountId
+      ? rootGetters['accounts/getAccount']?.(accountId)?.workspace_branding ||
+        defaultBranding
+      : $state.workspaceBranding;
+    if (!brand) return $state;
+    return {
+      ...$state,
+      workspaceBranding: brand,
+      installationName: brand.name,
+      brandName: brand.name,
+      logo: brand.logo_url,
+      logoDark: brand.logo_url,
+      logoThumbnail: brand.logo_url,
+      widgetBrandURL: brand.website_url,
+    };
+  },
   isOnChatwootCloud: $state => $state.deploymentEnv === 'cloud',
   isMetaInboxCreationDisabled: $state =>
     $state.deploymentEnv === 'cloud' && $state.disableMetaInboxCreation,

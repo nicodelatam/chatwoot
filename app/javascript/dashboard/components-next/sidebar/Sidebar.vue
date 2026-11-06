@@ -808,6 +808,12 @@ const menuItems = computed(() => {
           icon: 'i-lucide-briefcase',
           to: accountScopedRoute('general_settings_index'),
         },
+        {
+          name: 'Settings Workspace Branding',
+          label: t('WORKSPACE_BRANDING.NAV'),
+          icon: 'i-lucide-palette',
+          to: accountScopedRoute('workspace_branding_index'),
+        },
         // {
         //   name: 'Settings Captain',
         //   label: t('SIDEBAR.CAPTAIN_AI'),
@@ -1011,7 +1017,7 @@ const menuItems = computed(() => {
         </template>
         <template v-else>
           <div class="grid flex-shrink-0 place-content-center size-6">
-            <Logo class="size-4" />
+            <Logo class="size-6" />
           </div>
           <div class="flex-shrink-0 w-px h-3 bg-n-strong" />
           <SidebarAccountSwitcher
