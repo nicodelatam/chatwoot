@@ -6,12 +6,12 @@ This fork provides an independent voice integration for agents to receive and pl
 
 Reviewed on 2026-10-14 against this fork's `LICENSE` and `enterprise/LICENSE`.
 
-- The [root license](https://github.com/nicodelatam/chatwoot/blob/develop/LICENSE) permits using, modifying, distributing and selling the code outside `enterprise/` under MIT, while retaining the copyright and permission notices. Third-party components keep their own licenses.
-- The [Enterprise license](https://github.com/nicodelatam/chatwoot/blob/develop/enterprise/LICENSE) permits development/testing without a subscription, but requires an appropriate subscription and licensed seats for production use of that code and modifications to it.
+- The [root license](https://github.com/nicodelatam/chatwoot/blob/main/LICENSE) permits using, modifying, distributing and selling the code outside `enterprise/` under MIT, while retaining the copyright and permission notices. Third-party components keep their own licenses.
+- The [Enterprise license](https://github.com/nicodelatam/chatwoot/blob/main/enterprise/LICENSE) permits development/testing without a subscription, but requires an appropriate subscription and licensed seats for production use of that code and modifications to it.
 - These new controllers, models, jobs, services and components were written independently from Meta's public API documentation. They do not load Enterprise call services, remove subscription checks, enable paid feature flags or relocate Enterprise code.
 - The image workflow removes `enterprise/` before building and verifies its absence in the resulting image. It sets `CW_EDITION=ce` and `DISABLE_ENTERPRISE=true`. Preserve the MIT notice in this fork and its images. This review concerns the published source licenses; it is not a review of any separate commercial agreement.
 
-The source fork is [`nicodelatam/chatwoot`](https://github.com/nicodelatam/chatwoot), default branch `develop`. The vendor upstream remains [`chatwoot/chatwoot`](https://github.com/chatwoot/chatwoot). [`nicodelatam/chatwoot-nico`](https://github.com/nicodelatam/chatwoot-nico) owns the deployment configuration.
+The source fork is [`nicodelatam/chatwoot`](https://github.com/nicodelatam/chatwoot), default branch `main`. The vendor upstream remains [`chatwoot/chatwoot`](https://github.com/chatwoot/chatwoot). [`nicodelatam/chatwoot-nico`](https://github.com/nicodelatam/chatwoot-nico) owns the deployment configuration.
 
 ## Meta prerequisites
 
@@ -19,7 +19,7 @@ The [Calling overview](https://developers.facebook.com/documentation/business-me
 
 1. Use a business phone number registered with Cloud API, not a WhatsApp Business app coexistence number.
 2. The business needs a daily messaging limit of at least 2,000 unique recipients. Public test numbers have different eligibility rules.
-3. The Meta app must have `whatsapp_business_messaging`, be subscribed to the WABA, and subscribe to the `calls` webhook field in App Dashboard → WhatsApp → Configuration. The WABA callback registration does not replace the app-level webhook subscription.
+3. The Meta app must have `whatsapp_business_messaging`, be subscribed to the WABA, and subscribe to the `calls` webhook field in App Dashboard â†’ WhatsApp â†’ Configuration. The WABA callback registration does not replace the app-level webhook subscription.
 4. Configure a valid Meta app secret so webhook signatures can be verified. The existing `WHATSAPP_APP_SECRET` installation config or channel app-secret fields are used.
 5. Enable calling on the phone number. This integration refuses numbers configured for SIP. Inspecting settings requires the documented `whatsapp_business_management` access.
 6. Use HTTPS and a browser with microphone access. The browser must reach Meta's WebRTC media servers; validate the real agent network before rollout.
@@ -58,7 +58,7 @@ Microphone tracks stay disabled until acceptance. SDP is filtered from request l
 
 ## Build and rollout
 
-The **Community WhatsApp calling** workflow validates the frontend, builds Community Edition, checks Ruby syntax, migrates an isolated PostgreSQL database, checks Rails routes, and publishes `ghcr.io/nicodelatam/chatwoot-community:<commit-sha>` only after validation succeeds. The dedicated Dockerfile uses the official `v4.18.0-ce` runtime pinned by digest, installs lockfile additions, and rebuilds this fork's browser assets. Dispatch the workflow on the reviewed commit for later releases.
+The **Community WhatsApp calling** workflow validates the frontend, builds Community Edition, checks Ruby syntax, migrates an isolated PostgreSQL database, checks Rails routes, and publishes `ghcr.io/nicodelatam/chatwoot-community:<commit-sha>` only after validation succeeds. The dedicated Dockerfile uses the official `v4.19.1-ce` runtime pinned by digest, installs lockfile additions, and rebuilds this fork's browser assets. Dispatch the workflow on the reviewed commit for later releases.
 
 Pin both Rails and Sidekiq in `chatwoot-nico` to the same verified image SHA. Keep the existing database, Redis, storage, secrets and domains. The normal `db:chatwoot_prepare` startup applies the additive call-table migration. Confirm backup freshness before production deployment. Retain the previous image reference for rollback; leave the additive table in place when reverting code.
 
