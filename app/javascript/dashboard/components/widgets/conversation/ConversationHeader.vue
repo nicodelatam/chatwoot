@@ -35,7 +35,7 @@ const store = useStore();
 const route = useRoute();
 const conversationHeader = ref(null);
 const { width } = useElementSize(conversationHeader);
-const { isAWebWidgetInbox } = useInbox();
+const { isAWebWidgetInbox, isAnEmailChannel } = useInbox();
 const communityCalling = useCommunityWhatsappCalling();
 
 const currentChat = computed(() => store.getters.getSelectedChat);
@@ -69,6 +69,11 @@ const isHMACVerified = computed(() => {
     return true;
   }
   return chatMetadata.value.hmac_verified;
+});
+
+const mailSubject = computed(() => {
+  if (!isAnEmailChannel.value) return '';
+  return props.chat.additional_attributes?.mail_subject;
 });
 
 const currentContact = computed(() =>
@@ -154,11 +159,11 @@ const copyConversationId = async () => {
         </div>
 
         <div
-          class="flex items-center gap-1 overflow-hidden text-xs conversation--header--actions text-n-slate-11 text-ellipsis whitespace-nowrap"
+          class="flex items-center max-w-full gap-1 overflow-hidden text-xs conversation--header--actions text-n-slate-11 text-ellipsis whitespace-nowrap"
         >
           <button
             type="button"
-            class="truncate text-label-small text-n-slate-11 hover:text-n-slate-12 !p-0 cucursor-pointer"
+            class="truncate shrink-0 text-label-small text-n-slate-11 hover:text-n-slate-12 !p-0 cucursor-pointer"
             @click="copyConversationId"
           >
             {{ `#${chat.id}` }}
@@ -169,12 +174,19 @@ const copyConversationId = async () => {
             aria-hidden="true"
           />
           <InboxName v-if="hasMultipleInboxes" :inbox="inbox" class="!mx-0" />
+          <span v-if="mailSubject">•</span>
+          <span
+            v-if="mailSubject"
+            v-tooltip="mailSubject"
+            class="flex-1 min-w-16 truncate text-label-small text-n-slate-11"
+          >
+            {{ mailSubject }}
+          </span>
+          <span v-if="isSnoozed">•</span>
           <span
             v-if="isSnoozed"
-            class="mx-1 size-1 rounded-full bg-n-slate-7"
-            aria-hidden="true"
-          />
-          <span v-if="isSnoozed" class="font-medium text-n-amber-10">
+            class="min-w-0 truncate font-medium text-n-amber-10 shrink-0"
+          >
             {{ snoozedDisplayText }}
           </span>
         </div>
