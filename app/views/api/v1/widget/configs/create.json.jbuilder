@@ -19,7 +19,7 @@ json.website_channel_config do
   json.website_token @web_widget.website_token
   json.welcome_tagline @web_widget.welcome_tagline
   json.welcome_title @web_widget.welcome_title
-  json.widget_color @web_widget.widget_color
+  json.widget_color @web_widget.account.workspace_branding.color
   json.working_hours @web_widget.inbox.working_hours
   json.working_hours_enabled @web_widget.inbox.working_hours_enabled
 end

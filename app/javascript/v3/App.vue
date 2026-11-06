@@ -1,8 +1,12 @@
 <script>
+import { useWorkspaceBranding } from 'dashboard/composables/useWorkspaceBranding';
 import SnackbarContainer from './components/SnackBar/Container.vue';
 
 export default {
   components: { SnackbarContainer },
+  setup() {
+    useWorkspaceBranding();
+  },
   data() {
     return { theme: 'light' };
   },
@@ -70,7 +74,7 @@ body {
 }
 
 .text-link {
-  @apply text-n-brand font-medium hover:text-n-blue-10;
+  @apply text-n-blue-11 font-medium hover:text-n-blue-12;
 }
 
 .v-popper--theme-tooltip .v-popper__inner {

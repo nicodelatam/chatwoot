@@ -56,6 +56,7 @@ Rails.application.routes.draw do
         end
 
         scope module: :accounts do
+          resource :workspace_branding, only: %i[show update destroy], controller: :workspace_branding
           if ChatwootApp.enterprise?
             resources :monitors, only: [:index, :show, :create, :update, :destroy] do
               collection do

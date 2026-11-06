@@ -16,6 +16,7 @@ class Api::V1::Widget::ConfigsController < Api::V1::Widget::BaseController
       'MAXIMUM_FILE_UPLOAD_SIZE',
       'INSTALLATION_NAME'
     )
+    @global_config.merge!(@web_widget.account.workspace_branding.global_config)
   end
 
   def set_contact

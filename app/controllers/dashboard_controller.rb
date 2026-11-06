@@ -50,6 +50,8 @@ class DashboardController < ActionController::Base
 
   def set_global_config
     @global_config = GlobalConfig.get(*GLOBAL_CONFIG_KEYS).merge(app_config)
+    branding_account = Account.find_signed(params[:workspace], purpose: :workspace_branding) if params[:workspace].is_a?(String)
+    @global_config.merge!((branding_account&.workspace_branding || WorkspaceBranding.new).global_config)
   end
 
   def set_dashboard_scripts

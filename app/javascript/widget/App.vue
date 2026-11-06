@@ -1,5 +1,6 @@
 <script>
 import { mapGetters, mapActions } from 'vuex';
+import { applyWorkspaceTokens } from 'shared/helpers/workspaceBranding';
 import { setHeader } from 'widget/helpers/axios';
 import addHours from 'date-fns/addHours';
 import { IFrameHelper, RNHelper } from 'widget/helpers/utils';
@@ -92,6 +93,7 @@ export default {
   mounted() {
     const { websiteToken, locale, widgetColor } = window.chatwootWebChannel;
     this.setLocale(locale);
+    applyWorkspaceTokens(widgetColor);
     this.setWidgetColor(widgetColor);
     this.setWidgetColorVariable(widgetColor);
     setHeader(window.authToken);
