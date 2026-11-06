@@ -120,7 +120,7 @@ async function copyLink() {
 </script>
 
 <template>
-  <div class="w-full py-5 text-n-slate-12">
+  <div class="w-full pt-5 pb-20 text-n-slate-12 md:pb-5">
     <header class="mb-8 flex flex-wrap items-start justify-between gap-4">
       <div class="max-w-xl">
         <h1 class="text-2xl font-semibold tracking-tight">
