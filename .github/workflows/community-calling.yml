@@ -86,7 +86,7 @@ jobs:
       - name: Validate independent campaign reporting Ruby
         run: |
           docker run --rm community-calling-validation sh -c '
-            for file in app/models/community_campaign*.rb app/models/community_campaigns/*.rb app/services/community_campaigns/*.rb app/controllers/api/v1/accounts/community_campaign_statistics_controller.rb db/migrate/20261107160044_create_community_campaign_deliveries.rb; do ruby -c "$file" || exit; done'
+            for file in app/models/community_campaign*.rb app/models/community_campaigns/*.rb app/services/community_campaigns/*.rb app/controllers/api/v1/accounts/community_campaign_statistics_controller.rb app/controllers/api/v1/accounts/community_campaign_audiences_controller.rb db/migrate/20261107160044_create_community_campaign_deliveries.rb; do ruby -c "$file" || exit; done'
       - name: Migrate isolated database and validate Rails routes
         run: |
           docker run --rm --network host \
