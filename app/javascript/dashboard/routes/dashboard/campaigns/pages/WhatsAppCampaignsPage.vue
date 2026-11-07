@@ -3,6 +3,8 @@ import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useRouter } from 'vue-router';
 import { useStoreGetters, useMapGetter } from 'dashboard/composables/store';
+import { useConfig } from 'dashboard/composables/useConfig';
+import Button from 'dashboard/components-next/button/Button.vue';
 
 import Spinner from 'dashboard/components-next/spinner/Spinner.vue';
 import CampaignLayout from 'dashboard/components-next/Campaigns/CampaignLayout.vue';
@@ -13,6 +15,7 @@ import WhatsAppCampaignEmptyState from 'dashboard/components-next/Campaigns/Empt
 const { t } = useI18n();
 const router = useRouter();
 const getters = useStoreGetters();
+const { isEnterprise } = useConfig();
 
 const selectedCampaign = ref(null);
 
@@ -44,7 +47,9 @@ const handleDelete = campaign => {
 
 const handleAnalytics = campaign => {
   router.push({
-    name: 'campaigns_whatsapp_analytics',
+    name: isEnterprise
+      ? 'campaigns_whatsapp_analytics'
+      : 'campaigns_whatsapp_statistics_detail',
     params: { campaignId: campaign.id },
   });
 };
@@ -56,6 +61,16 @@ const handleAnalytics = campaign => {
     :button-label="t('CAMPAIGN.WHATSAPP.NEW_CAMPAIGN')"
     @click="handleCreate"
   >
+    <template #header-actions>
+      <Button
+        sm
+        slate
+        outline
+        icon="i-lucide-chart-no-axes-combined"
+        :label="t('COMMUNITY_CAMPAIGNS.OPEN')"
+        @click="router.push({ name: 'campaigns_whatsapp_statistics' })"
+      />
+    </template>
     <div
       v-if="isFetchingCampaigns"
       class="flex items-center justify-center py-10 text-n-slate-11"
@@ -65,6 +80,7 @@ const handleAnalytics = campaign => {
     <CampaignList
       v-else-if="!hasNoWhatsAppCampaigns"
       :campaigns="WhatsAppCampaigns"
+      :community-statistics="!isEnterprise"
       show-edit
       @edit="handleEdit"
       @delete="handleDelete"

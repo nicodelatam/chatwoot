@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_10_19_143116) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_07_160044) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -767,6 +767,45 @@ ActiveRecord::Schema[7.1].define(version: 2026_10_19_143116) do
     t.string "phone_number_health_error", limit: 500
     t.index ["phone_number_health_checked_at"], name: "index_channel_whatsapp_on_phone_number_health_checked_at"
     t.index ["phone_number"], name: "index_channel_whatsapp_on_phone_number", unique: true
+  end
+
+  create_table "community_campaign_deliveries", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "campaign_id", null: false
+    t.bigint "inbox_id", null: false
+    t.bigint "contact_id"
+    t.string "provider_message_id"
+    t.string "status", default: "pending", null: false
+    t.string "error_code"
+    t.text "error_message"
+    t.boolean "historical", default: false, null: false
+    t.datetime "attempted_at"
+    t.datetime "sent_at"
+    t.datetime "delivered_at"
+    t.datetime "read_at"
+    t.datetime "failed_at"
+    t.datetime "last_event_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id", "campaign_id", "status"], name: "idx_community_deliveries_report"
+    t.index ["campaign_id", "contact_id"], name: "idx_community_deliveries_contact", unique: true
+    t.index ["contact_id"], name: "index_community_campaign_deliveries_on_contact_id"
+    t.index ["inbox_id", "provider_message_id"], name: "idx_community_deliveries_provider", unique: true
+  end
+
+  create_table "community_campaign_reports", force: :cascade do |t|
+    t.bigint "account_id", null: false
+    t.bigint "campaign_id", null: false
+    t.bigint "inbox_id", null: false
+    t.jsonb "audience_labels", default: [], null: false
+    t.integer "audience_size", default: 0, null: false
+    t.boolean "historical", default: false, null: false
+    t.boolean "snapshot_complete", default: false, null: false
+    t.datetime "tracking_started_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["account_id"], name: "index_community_campaign_reports_on_account_id"
+    t.index ["campaign_id"], name: "index_community_campaign_reports_on_campaign_id", unique: true
   end
 
   create_table "community_whatsapp_calls", force: :cascade do |t|

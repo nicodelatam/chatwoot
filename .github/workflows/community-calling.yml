@@ -43,6 +43,14 @@ jobs:
           app/javascript/dashboard/composables/useCommunityWhatsappCalling.js
           app/javascript/dashboard/components-next/CommunityCalling/*.vue
           app/javascript/dashboard/components-next/sidebar/Sidebar.vue
+          app/javascript/dashboard/api/communityCampaignStatistics.js
+          app/javascript/dashboard/composables/useCommunityCampaignStatistics.js
+          app/javascript/dashboard/helper/communityCampaignStatistics.js
+          app/javascript/dashboard/components-next/Campaigns/CommunityCampaignCharts.vue
+          app/javascript/dashboard/components-next/Campaigns/CampaignLayout.vue
+          app/javascript/dashboard/components-next/Campaigns/Pages/CampaignPage/CampaignList.vue
+          app/javascript/dashboard/routes/dashboard/campaigns/pages/CommunityCampaignStatisticsPage.vue
+          app/javascript/dashboard/routes/dashboard/campaigns/pages/WhatsAppCampaignsPage.vue
           app/javascript/dashboard/routes/dashboard/Dashboard.vue
           app/javascript/dashboard/components/widgets/conversation/ConversationHeader.vue
           app/javascript/dashboard/i18n/locale/en/index.js
@@ -58,6 +66,8 @@ jobs:
           app/javascript/dashboard/components/widgets/conversation/specs/ContactConversationLink.spec.js
           app/javascript/shared/composables/specs/useBranding.spec.js
           app/javascript/v3/views/login/Index.spec.js
+          app/javascript/dashboard/components-next/Campaigns/Pages/CampaignPage/specs/CampaignList.spec.js
+          app/javascript/dashboard/composables/spec/useAbortableRequest.spec.js
         env:
           TZ: UTC
       - name: Build Community Edition only
@@ -70,6 +80,10 @@ jobs:
           docker run --rm community-calling-validation sh -c '
             for file in app/models/workspace_branding.rb app/controllers/api/v1/accounts/workspace_branding_controller.rb app/models/community_whatsapp_call.rb app/controllers/api/v1/accounts/community_whatsapp_calls_controller.rb app/services/community_calling/*.rb app/jobs/community_calling/*.rb lib/custom_exceptions/community_calling_error.rb db/migrate/20261014140000_create_community_whatsapp_calls.rb; do ruby -c "$file" || exit; done
             test ! -d /app/enterprise'
+      - name: Validate independent campaign reporting Ruby
+        run: |
+          docker run --rm community-calling-validation sh -c '
+            for file in app/models/community_campaign*.rb app/models/community_campaigns/*.rb app/services/community_campaigns/*.rb app/controllers/api/v1/accounts/community_campaign_statistics_controller.rb db/migrate/20261107160044_create_community_campaign_deliveries.rb; do ruby -c "$file" || exit; done'
       - name: Migrate isolated database and validate Rails routes
         run: |
           docker run --rm --network host \
@@ -79,6 +93,7 @@ jobs:
             -e RAILS_ENV=production -e ENABLE_ACCOUNT_SIGNUP=true \
             community-calling-validation sh -c '
               bundle exec rails db:chatwoot_prepare &&
+              bundle exec rails community_campaigns:import_history &&
               bundle exec rails runner "abort if ChatwootApp.enterprise?; abort unless CommunityWhatsappCall.table_exists?; abort unless Rails.application.routes.url_helpers.api_v1_account_community_whatsapp_calls_path(account_id: 1).include?(%q[community_whatsapp_calls]); puts %q[Community calling database and routes verified]"'
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3

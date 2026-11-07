@@ -46,6 +46,7 @@ import onboarding from './onboarding.json';
 import sessionLimit from './sessionLimit.json';
 import yearInReview from './yearInReview.json';
 import communityCalling from './communityCalling.json';
+import communityCampaignStatistics from './communityCampaignStatistics.json';
 
 export default {
   ...workspaceBranding,
@@ -96,4 +97,5 @@ export default {
   ...sessionLimit,
   ...yearInReview,
   ...communityCalling,
+  ...communityCampaignStatistics,
 };
