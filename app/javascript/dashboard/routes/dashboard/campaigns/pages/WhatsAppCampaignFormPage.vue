@@ -459,7 +459,13 @@ const persistReschedule = async () => {
   if (await handleUpdate({ scheduled_at: new Date(scheduledAt).toISOString() }))
     savedState.value = { ...savedState.value, scheduledAt };
 };
-const handleReschedule = () => checkSchedule(persistReschedule);
+const handleReschedule = () => {
+  if (communityAudienceEnabled.value && isSectionDirty('audience')) {
+    useAlert(t('COMMUNITY_AUDIENCE.SAVE_BEFORE_RESCHEDULE'));
+    return undefined;
+  }
+  return checkSchedule(persistReschedule);
+};
 </script>
 
 <template>
@@ -507,7 +513,8 @@ const handleReschedule = () => checkSchedule(persistReschedule);
               isScheduleInPast ||
               uiFlags.isUpdating ||
               isCheckingAudience ||
-              !isAudienceComplete
+              !isAudienceComplete ||
+              (communityAudienceEnabled && isSectionDirty('audience'))
             "
             @click="handleReschedule"
           />
@@ -566,6 +573,17 @@ const handleReschedule = () => checkSchedule(persistReschedule);
             :labels="labels"
             :messaging-tier="messagingTier"
           />
+          <p
+            v-if="
+              isEditMode &&
+              communityAudienceEnabled &&
+              isSectionDirty('audience')
+            "
+            class="m-0 text-sm text-n-amber-11"
+            role="status"
+          >
+            {{ t('COMMUNITY_AUDIENCE.SAVE_BEFORE_RESCHEDULE') }}
+          </p>
         </SectionCard>
 
         <SectionCard

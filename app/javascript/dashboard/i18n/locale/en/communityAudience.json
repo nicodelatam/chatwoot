@@ -16,6 +16,7 @@
     "LOAD_ERROR": "No pudimos revisar la audiencia. Actualiza antes de programar.",
     "REFRESH": "Revisar de nuevo",
     "EMPTY": "La audiencia no tiene contactos disponibles para este envío.",
+    "SAVE_BEFORE_RESCHEDULE": "Guarda los cambios de audiencia antes de reprogramar la campaña.",
     "ACTIVITY_TITLE": "Revisa los envíos antes de programar",
     "SENT_TODAY": "Hoy ya se inició {count} campaña de WhatsApp. Zona horaria: {timezone}. | Hoy ya se iniciaron {count} campañas de WhatsApp. Zona horaria: {timezone}.",
     "OVERLAP": "Ya hubo un intento de envío de campaña hoy para {count} contacto de esta audiencia. | Ya hubo intentos de envío de campaña hoy para {count} contactos de esta audiencia.",
