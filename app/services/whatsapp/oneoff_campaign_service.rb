@@ -52,6 +52,8 @@ class Whatsapp::OneoffCampaignService
   end
 
   def process_contact(contact)
+    return CommunityCampaigns::SendDeliveryService.new(campaign, contact).perform unless ChatwootApp.enterprise?
+
     Rails.logger.info "Processing contact: #{contact.name} (#{contact.phone_number})"
 
     recipient, recipient_error = campaign_destination(contact)
@@ -72,6 +74,11 @@ class Whatsapp::OneoffCampaignService
   end
 
   def audience_contacts
+    unless ChatwootApp.enterprise?
+      report = CommunityCampaignReport.prepare!(campaign)
+      return campaign.account.contacts.where(id: report.deliveries.select(:contact_id))
+    end
+
     campaign.account.contacts.tagged_with(extract_audience_labels, any: true)
   end
 

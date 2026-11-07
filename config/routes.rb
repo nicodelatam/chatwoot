@@ -184,6 +184,7 @@ Rails.application.routes.draw do
               get 'analytics/contacts', to: 'campaigns/analytics#contacts'
             end
           end
+          resource :community_campaign_statistics, only: [:show], controller: :community_campaign_statistics
           resources :dashboard_apps, only: [:index, :show, :create, :update, :destroy]
           namespace :channels do
             resource :twilio_channel, only: [:create]

@@ -52,6 +52,13 @@ class Campaign < ApplicationRecord
   enum campaign_status: { active: 0, completed: 1, processing: 2 }
 
   has_many :conversations, dependent: :nullify, autosave: true
+  has_one :community_campaign_report, dependent: :destroy
+  has_many :community_campaign_deliveries, dependent: :delete_all
+
+  scope :community_reportable, lambda {
+    where(campaign_type: :one_off, inbox_id: Inbox.where(channel_type: 'Channel::Whatsapp',
+                                                       channel_id: Channel::Whatsapp.where(provider: 'whatsapp_cloud').select(:id)).select(:id))
+  }
 
   before_validation :ensure_correct_campaign_attributes
   before_update :set_completed_at, if: :marking_completed?

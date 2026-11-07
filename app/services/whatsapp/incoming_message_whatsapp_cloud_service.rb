@@ -4,6 +4,11 @@
 class Whatsapp::IncomingMessageWhatsappCloudService < Whatsapp::IncomingMessageBaseService
   private
 
+  def process_statuses
+    @processed_params[:statuses].each { |receipt| CommunityCampaigns::StatusService.new(inbox, receipt).perform }
+    super
+  end
+
   def processed_params
     @processed_params ||= params[:entry].try(:first).try(:[], 'changes').try(:first).try(:[], 'value')
   end
