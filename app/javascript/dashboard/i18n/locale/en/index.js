@@ -1,4 +1,5 @@
 import workspaceBranding from './workspaceBranding.json';
+import communityAudience from './communityAudience.json';
 import advancedFilters from './advancedFilters.json';
 import agentBots from './agentBots.json';
 import agentMgmt from './agentMgmt.json';
@@ -98,4 +99,5 @@ export default {
   ...yearInReview,
   ...communityCalling,
   ...communityCampaignStatistics,
+  ...communityAudience,
 };

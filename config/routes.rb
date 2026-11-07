@@ -185,6 +185,7 @@ Rails.application.routes.draw do
             end
           end
           resource :community_campaign_statistics, only: [:show], controller: :community_campaign_statistics
+          resource :community_campaign_audience, only: [:create], controller: :community_campaign_audiences
           resources :dashboard_apps, only: [:index, :show, :create, :update, :destroy]
           namespace :channels do
             resource :twilio_channel, only: [:create]

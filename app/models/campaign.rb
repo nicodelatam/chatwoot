@@ -42,6 +42,7 @@ class Campaign < ApplicationRecord
   validate :prevent_completed_campaign_from_update, on: :update
   validate :sender_must_belong_to_account
   validate :inbox_must_belong_to_account
+  validate :validate_community_audience, if: -> { trigger_rules&.key?('community_audience') }
 
   belongs_to :account
   belongs_to :inbox
@@ -74,6 +75,12 @@ class Campaign < ApplicationRecord
   end
 
   private
+
+  def validate_community_audience
+    CommunityCampaigns::Audience.new(self).validate!
+  rescue CustomExceptions::CommunityCampaignFilterError => e
+    errors.add(:audience, e.message)
+  end
 
   def feature_enabled?
     account.feature_enabled?(:campaigns)
