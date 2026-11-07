@@ -37,6 +37,16 @@ Las gráficas temporales usan la fecha del evento de Meta, o la aceptación loca
 - Una solicitud interrumpida queda **Sin confirmación**, y no se reenvía automáticamente: Meta puede haberla aceptado. La actualización posterior del proveedor puede resolver su estado.
 - La API `GET /api/v1/accounts/:account_id/community_campaign_statistics` requiere administrador y aplica el alcance de cuenta. Valida fechas, zona horaria, identificadores, estados y paginación.
 
+## Audiencias de fallidos y aviso de actividad
+
+En el wizard de una campaña nueva, la sección **Audiencia → Enviar a** permite elegir contactos por etiquetas o **Solo fallidos de otra campaña**. Selecciona una campaña finalizada del mismo canal y, opcionalmente, uno o varios códigos de error. Dejar los códigos vacíos incluye todos los fallos confirmados. Por ejemplo, `131048` selecciona únicamente esa causa; `131026` permite seleccionar sus fallos de entrega.
+
+El servidor resuelve la selección por cuenta, canal y contacto. Excluye contactos bloqueados, recibos de entrega o lectura y reintentos en curso o sin confirmación de la misma cadena de campañas. Una campaña nueva conserva sus propios intentos y el historial anterior. La audiencia se vuelve a calcular y se congela al iniciar el envío; otras campañas de reintento de esa misma cadena no pueden reservar simultáneamente los mismos contactos. La configuración se conserva en `campaigns.trigger_rules.community_audience`, sin migraciones nuevas.
+
+El wizard muestra las campañas de WhatsApp que iniciaron hoy, las coincidencias con contactos que ya tuvieron un intento hoy y las campañas pendientes programadas para el día elegido. Usa la zona horaria del navegador, incluyendo sus límites de medianoche. Antes de crear o reprogramar, consulta nuevamente estos datos y pide confirmación cuando hay actividad. El aviso ayuda a evitar duplicados; permite un reintento intencional y no representa un bloqueo diario global. Los intentos no prueban entrega y el historial ausente no puede reconstruirse.
+
+La consulta `POST /api/v1/accounts/:account_id/community_campaign_audience` no crea campañas ni envía mensajes; requiere administrador y valida el alcance de cuenta y canal. Las estadísticas siguen siendo de solo consulta y no incluyen acciones de reenvío.
+
 ## Historial existente y despliegue
 
 Crear y verificar un backup antes de migrar. La migración añade dos tablas independientes, sin borrar ni modificar los registros anteriores. Ejecutar `bundle exec rails community_campaigns:import_history` después de migrar y antes de arrancar workers. La tarea es idempotente y lee los datos históricos mediante un adaptador de solo lectura; no instancia modelos Enterprise.

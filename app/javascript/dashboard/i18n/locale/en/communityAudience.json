@@ -1,0 +1,30 @@
+{
+  "COMMUNITY_AUDIENCE": {
+    "TYPE": "Enviar a",
+    "BY_LABELS": "Contactos por etiquetas",
+    "BY_FAILURES": "Solo fallidos de otra campaña",
+    "SOURCE": "Campaña de origen",
+    "SOURCE_PLACEHOLDER": "Elige una campaña finalizada",
+    "NO_SOURCES": "No hay campañas finalizadas con fallidos en este canal",
+    "FAILURES_HELP": "Crea un nuevo envío para contactos con un fallo confirmado. Se excluyen los bloqueados, los entregados o leídos y quienes tengan un reintento en curso. El historial anterior se conserva.",
+    "ERRORS": "Causas de fallo",
+    "ALL_ERRORS": "Todos los errores",
+    "ERROR_OPTION": "{code} · {count} fallidos",
+    "ERRORS_HELP": "Elige uno o varios códigos, o déjalo vacío para incluir todos. Por ejemplo, 131048 para los fallos por restricción de envío. Confirma que Meta haya levantado la restricción antes de programar.",
+    "TOTAL": "{count} contactos en esta audiencia",
+    "CHECKING": "Revisando audiencia y actividad del día…",
+    "LOAD_ERROR": "No pudimos revisar la audiencia. Actualiza antes de programar.",
+    "REFRESH": "Revisar de nuevo",
+    "EMPTY": "La audiencia no tiene contactos disponibles para este envío.",
+    "SAVE_BEFORE_RESCHEDULE": "Guarda los cambios de audiencia antes de reprogramar la campaña.",
+    "ACTIVITY_TITLE": "Revisa los envíos antes de programar",
+    "SENT_TODAY": "Hoy ya se inició {count} campaña de WhatsApp. Zona horaria: {timezone}. | Hoy ya se iniciaron {count} campañas de WhatsApp. Zona horaria: {timezone}.",
+    "OVERLAP": "Ya hubo un intento de envío de campaña hoy para {count} contacto de esta audiencia. | Ya hubo intentos de envío de campaña hoy para {count} contactos de esta audiencia.",
+    "SCHEDULED": "Hay {count} campaña programada para {day}. | Hay {count} campañas programadas para {day}.",
+    "ACTIVITY_HELP": "Un intento no garantiza entrega. Revisa las coincidencias para evitar mensajes repetidos el mismo día.",
+    "CONFIRM_TITLE": "Ya hay actividad de campañas",
+    "CONFIRM_HELP": "Revisamos de nuevo antes de guardar. Confirma que quieres programar esta campaña con la actividad indicada.",
+    "CONFIRM": "Programar de todos modos",
+    "CANCEL": "Revisar audiencia"
+  }
+}

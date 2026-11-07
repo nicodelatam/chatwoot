@@ -6,21 +6,23 @@ class CommunityCampaignReport < ApplicationRecord
 
   def self.prepare!(campaign)
     report = create_or_find_by!(campaign_id: campaign.id) { |record| record.account = campaign.account; record.inbox = campaign.inbox }
-    report.with_lock do
-      next if report.snapshot_complete?
+    campaign.account.with_lock do
+      report.with_lock do
+        next if report.snapshot_complete?
 
-      label_ids = campaign.audience.filter_map { |item| item['id'] if item['type'] == 'Label' }
-      labels = campaign.account.labels.where(id: label_ids).pluck(:id, :title).map { |id, title| { 'id' => id, 'title' => title } }
-      ids = labels.empty? ? [] : campaign.account.contacts.tagged_with(labels.pluck('title'), any: true).distinct.pluck(:id)
-      now = Time.current
-      ids.each_slice(1000) do |batch|
-        rows = batch.map do |contact_id|
-          { account_id: campaign.account_id, inbox_id: campaign.inbox_id, campaign_id: campaign.id,
-            contact_id: contact_id, status: 'pending', created_at: now, updated_at: now }
+        selection = CommunityCampaigns::Audience.new(campaign)
+        labels = selection.labels
+        ids = selection.contacts.pluck(:id)
+        now = Time.current
+        ids.each_slice(1000) do |batch|
+          rows = batch.map do |contact_id|
+            { account_id: campaign.account_id, inbox_id: campaign.inbox_id, campaign_id: campaign.id,
+              contact_id: contact_id, status: 'pending', created_at: now, updated_at: now }
+          end
+          CommunityCampaignDelivery.insert_all(rows, unique_by: :idx_community_deliveries_contact)
         end
-        CommunityCampaignDelivery.insert_all(rows, unique_by: :idx_community_deliveries_contact)
+        report.update!(audience_labels: labels, audience_size: ids.size, tracking_started_at: now, snapshot_complete: true)
       end
-      report.update!(audience_labels: labels, audience_size: ids.size, tracking_started_at: now, snapshot_complete: true)
     end
     report
   end

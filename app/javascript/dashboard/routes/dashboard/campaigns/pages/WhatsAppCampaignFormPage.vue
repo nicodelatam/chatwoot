@@ -21,6 +21,9 @@ import {
 } from 'dashboard/helper/templateHelper';
 import { useAbortableRequest } from 'dashboard/composables/useAbortableRequest';
 import InboxHealthAPI from 'dashboard/api/inboxHealth';
+import { useConfig } from 'dashboard/composables/useConfig';
+import Dialog from 'dashboard/components-next/dialog/Dialog.vue';
+import CommunityAudienceFields from 'dashboard/components-next/Campaigns/WhatsAppCampaign/CommunityAudienceFields.vue';
 
 import Breadcrumb from 'dashboard/components-next/breadcrumb/Breadcrumb.vue';
 import Button from 'dashboard/components-next/button/Button.vue';
@@ -34,7 +37,12 @@ import SchedulePopover from 'dashboard/components-next/Campaigns/WhatsAppCampaig
 
 const SECTION_FIELDS = {
   basic: ['title', 'inboxId'],
-  audience: ['audienceIds'],
+  audience: [
+    'audienceIds',
+    'audienceMode',
+    'retryCampaignId',
+    'retryErrorCodes',
+  ],
   template: ['templateId', 'processedParams'],
 };
 
@@ -42,6 +50,12 @@ const { t, te, locale } = useI18n();
 const route = useRoute();
 const router = useRouter();
 const store = useStore();
+const { isEnterprise } = useConfig();
+const audienceRef = ref(null);
+const activityDialog = ref(null);
+const activityCheck = ref(null);
+const pendingScheduleAction = ref(null);
+const isCheckingAudience = ref(false);
 
 const campaigns = useMapGetter('campaigns/getWhatsAppCampaigns');
 const labels = useMapGetter('labels/getLabels');
@@ -55,6 +69,9 @@ const buildState = () => ({
   templateId: null,
   processedParams: {},
   audienceIds: [],
+  audienceMode: 'labels',
+  retryCampaignId: '',
+  retryErrorCodes: [],
   scheduledAt: '',
 });
 
@@ -67,6 +84,17 @@ const healthData = ref(null);
 
 const campaignId = computed(() => route.params.campaignId);
 const isEditMode = computed(() => Boolean(campaignId.value));
+const communityAudienceEnabled = computed(
+  () =>
+    !isEnterprise &&
+    whatsAppInboxes.value.find(item => item.id === state.inboxId)?.provider ===
+      'whatsapp_cloud'
+);
+const isAudienceComplete = computed(() =>
+  communityAudienceEnabled.value
+    ? audienceRef.value?.valid
+    : state.audienceIds.length > 0
+);
 
 const campaign = computed(() =>
   campaigns.value.find(record => String(record.id) === String(campaignId.value))
@@ -110,6 +138,11 @@ const applyCampaign = record => {
     audienceIds: (record.audience ?? [])
       .filter(item => item.type === 'Label')
       .map(item => item.id),
+    audienceMode: record.trigger_rules?.community_audience?.mode || 'labels',
+    retryCampaignId:
+      record.trigger_rules?.community_audience?.source_campaign_id || '',
+    retryErrorCodes:
+      record.trigger_rules?.community_audience?.error_codes || [],
     scheduledAt: toDateTimeInput(record.scheduled_at),
   });
   savedState.value = snapshot(state);
@@ -171,6 +204,8 @@ watch(
     if (!isEditMode.value) {
       state.templateId = null;
       state.processedParams = {};
+      state.retryCampaignId = '';
+      state.retryErrorCodes = [];
     }
     abortHealthRequest();
     healthData.value = null;
@@ -221,7 +256,7 @@ const isValid = computed(
   () =>
     !!state.title &&
     !!state.inboxId &&
-    state.audienceIds.length > 0 &&
+    isAudienceComplete.value &&
     isTemplateComplete.value
 );
 
@@ -240,7 +275,26 @@ const commitSection = (section, submitted) => {
 };
 
 const audiencePayload = computed(() =>
-  state.audienceIds.map(id => ({ id, type: 'Label' }))
+  state.audienceMode === 'failed' && communityAudienceEnabled.value
+    ? []
+    : state.audienceIds.map(id => ({ id, type: 'Label' }))
+);
+const audienceRulesPayload = computed(() =>
+  communityAudienceEnabled.value
+    ? {
+        trigger_rules: {
+          ...campaign.value?.trigger_rules,
+          community_audience:
+            state.audienceMode === 'failed'
+              ? {
+                  mode: 'failed',
+                  source_campaign_id: Number(state.retryCampaignId),
+                  error_codes: state.retryErrorCodes,
+                }
+              : { mode: 'labels' },
+        },
+      }
+    : {}
 );
 
 const templatePayload = computed(() => {
@@ -262,7 +316,10 @@ const templatePayload = computed(() => {
 
 const sectionPayloads = {
   basic: () => ({ title: state.title, inbox_id: state.inboxId }),
-  audience: () => ({ audience: audiencePayload.value }),
+  audience: () => ({
+    audience: audiencePayload.value,
+    ...audienceRulesPayload.value,
+  }),
   template: () => templatePayload.value,
 };
 
@@ -333,6 +390,7 @@ const handleCreate = async scheduledAt => {
       title: state.title,
       inbox_id: state.inboxId,
       audience: audiencePayload.value,
+      ...audienceRulesPayload.value,
       scheduled_at: scheduledAt,
       ...templatePayload.value,
     });
@@ -347,17 +405,66 @@ const handleCreate = async scheduledAt => {
   }
 };
 
+const checkSchedule = async action => {
+  if (!communityAudienceEnabled.value) {
+    await action();
+    return;
+  }
+  if (isCheckingAudience.value) return;
+  isCheckingAudience.value = true;
+  try {
+    const data = await audienceRef.value.refresh(
+      new Date(state.scheduledAt).toISOString()
+    );
+    if (!data) return;
+    if (!data.total) {
+      useAlert(t('COMMUNITY_AUDIENCE.EMPTY'));
+      return;
+    }
+    const sameDay = data.scheduled_day === data.today;
+    if (
+      (sameDay && (data.sent_today.length || data.overlap_today)) ||
+      data.scheduled.length
+    ) {
+      activityCheck.value = data;
+      pendingScheduleAction.value = action;
+      activityDialog.value.open();
+      return;
+    }
+    await action();
+  } finally {
+    isCheckingAudience.value = false;
+  }
+};
+const confirmSchedule = async () => {
+  const action = pendingScheduleAction.value;
+  if (!action || isCheckingAudience.value) return;
+  activityDialog.value.close();
+  isCheckingAudience.value = true;
+  try {
+    await action();
+  } finally {
+    isCheckingAudience.value = false;
+  }
+};
 const handleSchedule = () =>
-  handleCreate(new Date(state.scheduledAt).toISOString());
+  checkSchedule(() => handleCreate(new Date(state.scheduledAt).toISOString()));
 
 const handleCancelReschedule = () => {
   state.scheduledAt = savedState.value.scheduledAt;
 };
 
-const handleReschedule = async () => {
+const persistReschedule = async () => {
   const scheduledAt = state.scheduledAt;
   if (await handleUpdate({ scheduled_at: new Date(scheduledAt).toISOString() }))
     savedState.value = { ...savedState.value, scheduledAt };
+};
+const handleReschedule = () => {
+  if (communityAudienceEnabled.value && isSectionDirty('audience')) {
+    useAlert(t('COMMUNITY_AUDIENCE.SAVE_BEFORE_RESCHEDULE'));
+    return undefined;
+  }
+  return checkSchedule(persistReschedule);
 };
 </script>
 
@@ -385,7 +492,7 @@ const handleReschedule = async () => {
           :color="isEditMode ? 'slate' : 'blue'"
           :show-actions="!isEditMode"
           :is-disabled="!isValid"
-          :is-loading="uiFlags.isCreating"
+          :is-loading="uiFlags.isCreating || isCheckingAudience"
           @confirm="handleSchedule"
         />
         <template v-if="isEditMode">
@@ -400,9 +507,14 @@ const handleReschedule = async () => {
           <Button
             size="sm"
             :label="t('CAMPAIGN.WHATSAPP.FORM.RESCHEDULE')"
-            :is-loading="uiFlags.isUpdating"
+            :is-loading="uiFlags.isUpdating || isCheckingAudience"
             :disabled="
-              !isScheduleDirty || isScheduleInPast || uiFlags.isUpdating
+              !isScheduleDirty ||
+              isScheduleInPast ||
+              uiFlags.isUpdating ||
+              isCheckingAudience ||
+              !isAudienceComplete ||
+              (communityAudienceEnabled && isSectionDirty('audience'))
             "
             @click="handleReschedule"
           />
@@ -434,15 +546,44 @@ const handleReschedule = async () => {
           :title="t('CAMPAIGN.WHATSAPP.FORM.AUDIENCE.TITLE')"
           :is-dirty="isSectionDirty('audience')"
           :is-saving="uiFlags.isUpdating"
-          :is-save-disabled="!state.audienceIds.length"
+          :is-save-disabled="!isAudienceComplete"
           @discard="handleDiscard('audience')"
           @save="handleSectionSave('audience')"
         >
+          <CommunityAudienceFields
+            v-if="communityAudienceEnabled"
+            ref="audienceRef"
+            v-model:mode="state.audienceMode"
+            v-model:source-id="state.retryCampaignId"
+            v-model:error-codes="state.retryErrorCodes"
+            :inbox-id="state.inboxId"
+            :campaign-id="campaignId"
+            :label-ids="state.audienceIds"
+            :scheduled-at="state.scheduledAt"
+          >
+            <AudienceFields
+              v-model="state.audienceIds"
+              :labels="labels"
+              :messaging-tier="messagingTier"
+            />
+          </CommunityAudienceFields>
           <AudienceFields
+            v-else
             v-model="state.audienceIds"
             :labels="labels"
             :messaging-tier="messagingTier"
           />
+          <p
+            v-if="
+              isEditMode &&
+              communityAudienceEnabled &&
+              isSectionDirty('audience')
+            "
+            class="m-0 text-sm text-n-amber-11"
+            role="status"
+          >
+            {{ t('COMMUNITY_AUDIENCE.SAVE_BEFORE_RESCHEDULE') }}
+          </p>
         </SectionCard>
 
         <SectionCard
@@ -470,5 +611,73 @@ const handleReschedule = async () => {
         />
       </div>
     </div>
+    <Dialog
+      ref="activityDialog"
+      type="alert"
+      :title="t('COMMUNITY_AUDIENCE.CONFIRM_TITLE')"
+      :description="t('COMMUNITY_AUDIENCE.CONFIRM_HELP')"
+      :confirm-button-label="t('COMMUNITY_AUDIENCE.CONFIRM')"
+      :cancel-button-label="t('COMMUNITY_AUDIENCE.CANCEL')"
+      :is-loading="isCheckingAudience"
+      @confirm="confirmSchedule"
+      @close="pendingScheduleAction = null"
+    >
+      <div
+        v-if="activityCheck"
+        class="flex flex-col gap-3 text-sm text-n-slate-12"
+      >
+        <p
+          v-if="
+            activityCheck.scheduled_day === activityCheck.today &&
+            activityCheck.sent_today.length
+          "
+          class="m-0"
+        >
+          {{
+            t('COMMUNITY_AUDIENCE.SENT_TODAY', {
+              count: activityCheck.sent_today.length,
+              timezone: activityCheck.timezone,
+            })
+          }}
+        </p>
+        <ul
+          v-if="
+            activityCheck.scheduled_day === activityCheck.today &&
+            activityCheck.sent_today.length
+          "
+          class="m-0 ps-5"
+        >
+          <li v-for="item in activityCheck.sent_today" :key="item.id">
+            {{ item.title }}
+          </li>
+        </ul>
+        <p
+          v-if="
+            activityCheck.scheduled_day === activityCheck.today &&
+            activityCheck.overlap_today
+          "
+          class="m-0"
+        >
+          {{
+            t('COMMUNITY_AUDIENCE.OVERLAP', {
+              count: activityCheck.overlap_today,
+            })
+          }}
+        </p>
+        <p v-if="activityCheck.scheduled.length" class="m-0">
+          {{
+            t('COMMUNITY_AUDIENCE.SCHEDULED', {
+              count: activityCheck.scheduled.length,
+              day: activityCheck.scheduled_day,
+            })
+          }}
+        </p>
+        <ul v-if="activityCheck.scheduled.length" class="m-0 ps-5">
+          <li v-for="item in activityCheck.scheduled" :key="item.id">
+            {{ item.title }}
+          </li>
+        </ul>
+      </div>
+    </Dialog>
   </div>
 </template>

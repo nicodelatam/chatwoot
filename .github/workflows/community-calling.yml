@@ -44,6 +44,9 @@ jobs:
           app/javascript/dashboard/components-next/CommunityCalling/*.vue
           app/javascript/dashboard/components-next/sidebar/Sidebar.vue
           app/javascript/dashboard/api/communityCampaignStatistics.js
+          app/javascript/dashboard/api/communityCampaignAudience.js
+          app/javascript/dashboard/components-next/Campaigns/WhatsAppCampaign/CommunityAudienceFields.vue
+          app/javascript/dashboard/routes/dashboard/campaigns/pages/WhatsAppCampaignFormPage.vue
           app/javascript/dashboard/composables/useCommunityCampaignStatistics.js
           app/javascript/dashboard/helper/communityCampaignStatistics.js
           app/javascript/dashboard/components-next/Campaigns/CommunityCampaignCharts.vue
@@ -83,7 +86,7 @@ jobs:
       - name: Validate independent campaign reporting Ruby
         run: |
           docker run --rm community-calling-validation sh -c '
-            for file in app/models/community_campaign*.rb app/models/community_campaigns/*.rb app/services/community_campaigns/*.rb app/controllers/api/v1/accounts/community_campaign_statistics_controller.rb db/migrate/20261107160044_create_community_campaign_deliveries.rb; do ruby -c "$file" || exit; done'
+            for file in app/models/community_campaign*.rb app/models/community_campaigns/*.rb app/services/community_campaigns/*.rb app/controllers/api/v1/accounts/community_campaign_statistics_controller.rb app/controllers/api/v1/accounts/community_campaign_audiences_controller.rb db/migrate/20261107160044_create_community_campaign_deliveries.rb; do ruby -c "$file" || exit; done'
       - name: Migrate isolated database and validate Rails routes
         run: |
           docker run --rm --network host \
