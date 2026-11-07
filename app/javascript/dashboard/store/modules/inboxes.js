@@ -167,7 +167,9 @@ export const actions = {
   get: async ({ commit }) => {
     commit(types.default.SET_INBOXES_UI_FLAG, { isFetching: true });
     try {
-      const response = await InboxesAPI.get(true);
+      // Channel metadata drives message status icons and campaign inbox choices.
+      // Always refresh it from the server instead of reusing an older browser cache.
+      const response = await InboxesAPI.get();
       commit(types.default.SET_INBOXES_UI_FLAG, { isFetching: false });
       commit(types.default.SET_INBOXES, response.data.payload);
       return true;

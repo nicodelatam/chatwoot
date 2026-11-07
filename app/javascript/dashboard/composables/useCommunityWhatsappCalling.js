@@ -6,6 +6,8 @@ const SDP_GATHERING_TIMEOUT_MS = 10000;
 const CONNECTION_TIMEOUT_MS = 15000;
 const DISCONNECTION_GRACE_MS = 5000;
 const OUTGOING_RING_TIMEOUT_MS = 60000;
+const LIST_POLL_INTERVAL_MS = 3000;
+const IDLE_LIST_POLL_INTERVAL_MS = 60000;
 
 const calls = ref([]);
 const inboxes = ref([]);
@@ -19,6 +21,7 @@ const muted = ref(false);
 let accountId = null;
 let sessionId = null;
 let listTimer = null;
+let nextIdleListPollAt = 0;
 let callTimer = null;
 let pc = null;
 let localStream = null;
@@ -232,6 +235,7 @@ const resetForAccount = nextAccountId => {
   if (listTimer) window.clearInterval(listTimer);
   if (callTimer) window.clearInterval(callTimer);
   listTimer = null;
+  nextIdleListPollAt = 0;
   callTimer = null;
   stopMedia();
   accountId = nextAccountId;
@@ -264,6 +268,7 @@ const syncCalls = async () => {
     if (requestedGeneration !== accountGeneration) return;
     calls.value = nextCalls;
     inboxes.value = nextInboxes;
+    nextIdleListPollAt = Date.now() + IDLE_LIST_POLL_INTERVAL_MS;
     if (activeCall.value) {
       const updatedCall = nextCalls.find(
         call => call.id === activeCall.value.id
@@ -369,11 +374,22 @@ const syncActiveCall = async () => {
   }
 };
 
+const pollCallList = () => {
+  const needsLiveUpdates =
+    panelOpen.value ||
+    configuredInboxIds.value.size > 0 ||
+    isActive.value ||
+    incomingCall.value;
+  if (!needsLiveUpdates && Date.now() < nextIdleListPollAt) return;
+
+  syncCalls();
+};
+
 const start = nextAccountId => {
   resetForAccount(nextAccountId);
   if (!accountId || listTimer) return;
-  syncCalls();
-  listTimer = window.setInterval(syncCalls, 3000);
+  pollCallList();
+  listTimer = window.setInterval(pollCallList, LIST_POLL_INTERVAL_MS);
 };
 
 const stop = () => {
@@ -384,6 +400,7 @@ const stop = () => {
   if (listTimer) window.clearInterval(listTimer);
   if (callTimer) window.clearInterval(callTimer);
   listTimer = null;
+  nextIdleListPollAt = 0;
   callTimer = null;
   stopMedia();
   activeCall.value = null;
