@@ -18,7 +18,6 @@ const displayedCall = computed(
 const visible = computed(
   () => calling.panelOpen.value || !!displayedCall.value
 );
-const hasInboxes = computed(() => calling.inboxes.value.length > 0);
 const accountIdentifier = computed(() => accountId.value);
 const ringtone = new Audio('/audio/dashboard/ringtone.mp3');
 ringtone.loop = true;
@@ -272,15 +271,5 @@ const askForPermission = async () => {
         />
       </div>
     </section>
-
-    <NextButton
-      v-if="!visible && hasInboxes"
-      :label="t('COMMUNITY_CALLING.PANEL_TITLE')"
-      icon="i-ri-whatsapp-fill"
-      slate
-      class="shadow-lg"
-      :aria-expanded="visible"
-      @click="calling.panelOpen.value = !calling.panelOpen.value"
-    />
   </div>
 </template>
