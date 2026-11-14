@@ -29,7 +29,7 @@ Meta allows incoming calls wherever Cloud API is available. Its current outbound
 ## Use
 
 1. Create or connect a WhatsApp Cloud API inbox using the existing inbox setup. Subscribe the app to `calls` and verify the secret configuration.
-2. Open **WhatsApp calls** at the bottom of the dashboard sidebar. In the collapsed sidebar, use its WhatsApp icon; on mobile, open the menu first. An administrator can enable the desired inbox. The launcher stays inside the sidebar so it cannot cover the conversation's Send button.
+2. As an administrator, open **Settings → Inboxes**, choose the WhatsApp Cloud inbox, and turn on calling in its **Calls** tab. The call panel only appears while a call is ringing, connecting or active, or when a call needs attention, so it never covers the conversation's Send button.
 3. A customer calls the business number from WhatsApp. An inbox member sees the caller panel and can answer or decline. The first successful acceptance reserves the call for that browser session.
 4. To place a call, open the contact's conversation and select **Call on WhatsApp**. The server checks current permission with Meta before asking for the microphone.
 5. If permission is missing, select **Request call permission**. The contact must approve before retrying. Free-form requests are limited to the 24-hour customer service window. Outside that window, use an approved call-permission template through the existing template sender, or have the contact enable calls in the business profile.

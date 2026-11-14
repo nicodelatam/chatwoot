@@ -1,6 +1,5 @@
 <script setup>
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { useAdmin } from 'dashboard/composables/useAdmin';
 import { useAccount } from 'dashboard/composables/useAccount';
 import { useI18n } from 'vue-i18n';
 import NextButton from 'dashboard/components-next/button/Button.vue';
@@ -8,7 +7,6 @@ import Icon from 'dashboard/components-next/icon/Icon.vue';
 import { useCommunityWhatsappCalling } from 'dashboard/composables/useCommunityWhatsappCalling';
 
 const { accountId } = useAccount();
-const { isAdmin } = useAdmin();
 const { t } = useI18n();
 const calling = useCommunityWhatsappCalling();
 
@@ -16,7 +14,8 @@ const displayedCall = computed(
   () => calling.activeCall.value || calling.incomingCall.value
 );
 const visible = computed(
-  () => calling.panelOpen.value || !!displayedCall.value
+  () =>
+    !!displayedCall.value || (calling.panelOpen.value && !!calling.error.value)
 );
 const accountIdentifier = computed(() => accountId.value);
 const ringtone = new Audio('/audio/dashboard/ringtone.mp3');
@@ -119,8 +118,9 @@ onBeforeUnmount(() => {
   calling.stop();
 });
 
-const toggleInbox = async inbox => {
-  await calling.configureInbox(inbox.id, !inbox.enabled);
+const closePanel = () => {
+  calling.panelOpen.value = false;
+  calling.error.value = '';
 };
 
 const askForPermission = async () => {
@@ -148,7 +148,7 @@ const askForPermission = async () => {
           ghost
           xs
           :aria-label="t('COMMUNITY_CALLING.CLOSE')"
-          @click="calling.panelOpen.value = false"
+          @click="closePanel"
         />
       </div>
 
@@ -213,42 +213,6 @@ const askForPermission = async () => {
             />
           </template>
         </div>
-      </div>
-
-      <div v-else class="flex flex-col gap-3 p-4">
-        <p class="m-0 text-sm text-n-slate-11">
-          {{ t('COMMUNITY_CALLING.SETUP_DESCRIPTION') }}
-        </p>
-        <ul v-if="isAdmin" class="m-0 flex list-none flex-col gap-2 p-0">
-          <li
-            v-for="inbox in calling.inboxes.value"
-            :key="inbox.id"
-            class="flex items-center justify-between gap-3"
-          >
-            <span class="truncate text-sm text-n-slate-12">{{
-              inbox.name
-            }}</span>
-            <button
-              type="button"
-              class="relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-              :class="inbox.enabled ? 'bg-n-teal-9' : 'bg-n-slate-5'"
-              :aria-pressed="inbox.enabled"
-              :aria-label="
-                t('COMMUNITY_CALLING.TOGGLE_INBOX', { name: inbox.name })
-              "
-              :disabled="!inbox.can_manage || calling.busy.value"
-              @click="toggleInbox(inbox)"
-            >
-              <span
-                class="inline-block size-4 rounded-full bg-white transition-transform"
-                :class="inbox.enabled ? 'translate-x-6' : 'translate-x-1'"
-              />
-            </button>
-          </li>
-        </ul>
-        <p v-else class="m-0 text-sm text-n-slate-11">
-          {{ t('COMMUNITY_CALLING.ADMIN_SETUP') }}
-        </p>
       </div>
 
       <div

@@ -705,17 +705,6 @@ const toggleMute = () => {
   });
 };
 
-const configureInbox = (inboxId, enabled) =>
-  withLock(async ({ accountId: requestAccountId, generation }) => {
-    await CommunityWhatsappCallsAPI.configure(requestAccountId, {
-      inbox_id: inboxId,
-      enabled,
-    });
-    if (generation !== accountGeneration) return null;
-    await syncCalls();
-    return null;
-  });
-
 export function useCommunityWhatsappCalling() {
   return {
     calls,
@@ -739,6 +728,5 @@ export function useCommunityWhatsappCalling() {
     rejectIncomingCall,
     terminateCall,
     toggleMute,
-    configureInbox,
   };
 }

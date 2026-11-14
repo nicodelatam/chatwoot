@@ -5,7 +5,6 @@ import { useAccount } from 'dashboard/composables/useAccount';
 import { useConfig } from 'dashboard/composables/useConfig';
 import { useKbd } from 'dashboard/composables/utils/useKbd';
 import { useMapGetter } from 'dashboard/composables/store';
-import { useCommunityWhatsappCalling } from 'dashboard/composables/useCommunityWhatsappCalling';
 import { useStore } from 'vuex';
 import { useI18n } from 'vue-i18n';
 import { useSidebarKeyboardShortcuts } from './useSidebarKeyboardShortcuts';
@@ -48,12 +47,6 @@ const emit = defineEmits([
 const { accountScopedRoute, isOnChatwootCloud } = useAccount();
 const { isEnterprise } = useConfig();
 const store = useStore();
-const communityCalling = useCommunityWhatsappCalling();
-
-const openCommunityCalling = () => {
-  communityCalling.panelOpen.value = true;
-  emit('closeMobileSidebar');
-};
 
 // Calls run on the enterprise-only API (cloud runs enterprise); hide the entry
 // on community so it doesn't lead to a dashboard/CTA the backend can't serve.
@@ -1098,24 +1091,6 @@ const menuItems = computed(() => {
     >
       <div
         class="pointer-events-none absolute inset-x-0 -top-[1.938rem] h-8 bg-gradient-to-t from-n-background to-transparent"
-      />
-      <Button
-        v-if="communityCalling.inboxes.value.length"
-        type="button"
-        icon="i-ri-whatsapp-fill"
-        ghost
-        slate
-        sm
-        class="mx-2 mb-1"
-        :class="isEffectivelyCollapsed ? 'size-8' : 'self-stretch'"
-        :justify="isEffectivelyCollapsed ? 'center' : 'start'"
-        :label="
-          isEffectivelyCollapsed ? '' : t('COMMUNITY_CALLING.PANEL_TITLE')
-        "
-        :title="t('COMMUNITY_CALLING.PANEL_TITLE')"
-        :aria-label="t('COMMUNITY_CALLING.PANEL_TITLE')"
-        :aria-expanded="communityCalling.panelOpen.value"
-        @click="openCommunityCalling"
       />
       <SidebarChangelogCard
         v-if="
