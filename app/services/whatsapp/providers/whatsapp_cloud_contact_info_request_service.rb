@@ -9,6 +9,7 @@ class Whatsapp::Providers::WhatsappCloudContactInfoRequestService < Whatsapp::Pr
       headers: api_headers,
       body: {
         messaging_product: 'whatsapp',
+        messaging_account_id: whatsapp_channel.provider_config['business_account_id'],
         recipient_type: 'individual',
         **recipient_params(identifier),
         type: 'interactive',

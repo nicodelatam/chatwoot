@@ -14,8 +14,10 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
   def send_template(phone_number, template_info, message)
     template_body = template_body_parameters(template_info)
 
+    # Embedded Signup's WABA ID identifies the Messaging account; pin it when a phone number has multiple billing accounts.
     request_body = {
       messaging_product: 'whatsapp',
+      messaging_account_id: whatsapp_channel.provider_config['business_account_id'],
       recipient_type: 'individual', # Only individual messages supported (not group messages)
       # BSUID -> `recipient`; phone number -> `to` (see recipient_params in the base provider).
       **recipient_params(phone_number),
@@ -131,6 +133,7 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
       headers: api_headers,
       body: {
         messaging_product: 'whatsapp',
+        messaging_account_id: whatsapp_channel.provider_config['business_account_id'],
         context: whatsapp_reply_context(message),
         **recipient_params(phone_number),
         text: { body: message.outgoing_content },
@@ -151,6 +154,7 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
       headers: api_headers,
       body: {
         :messaging_product => 'whatsapp',
+        :messaging_account_id => whatsapp_channel.provider_config['business_account_id'],
         :context => whatsapp_reply_context(message),
         **recipient_params(phone_number),
         'type' => type,
@@ -248,6 +252,7 @@ class Whatsapp::Providers::WhatsappCloudService < Whatsapp::Providers::BaseServi
       headers: api_headers,
       body: {
         messaging_product: 'whatsapp',
+        messaging_account_id: whatsapp_channel.provider_config['business_account_id'],
         **recipient_params(phone_number),
         interactive: payload,
         type: 'interactive'
