@@ -5,7 +5,9 @@ class CommunityCampaigns::CloudProvider < Whatsapp::Providers::WhatsappCloudServ
       "#{phone_id_path('v24.0')}/messages",
       headers: api_headers,
       timeout: 30,
-      body: { messaging_product: 'whatsapp', **recipient_params(identifier), type: 'template',
+      # Pin the inbox's Messaging account, as the base provider does, so Meta never bills another account on the number.
+      body: { messaging_product: 'whatsapp', messaging_account_id: whatsapp_channel.provider_config['business_account_id'],
+              **recipient_params(identifier), type: 'template',
               template: template_body_parameters(template_info),
               biz_opaque_callback_data: "community_campaign:#{delivery.signed_id(purpose: :community_campaign_receipt)}" }.to_json
     )
