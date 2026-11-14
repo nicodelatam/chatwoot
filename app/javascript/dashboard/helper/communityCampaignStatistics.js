@@ -10,6 +10,7 @@ export function campaignStatisticsLabels(t) {
       awaiting: t('COMMUNITY_CAMPAIGNS.STATUSES.awaiting'),
       accepted: t('COMMUNITY_CAMPAIGNS.STATUSES.accepted'),
       delivered_all: t('COMMUNITY_CAMPAIGNS.STATUSES.delivered_all'),
+      replied: t('COMMUNITY_CAMPAIGNS.STATUSES.replied'),
     },
     campaignStatuses: {
       active: t('COMMUNITY_CAMPAIGNS.CAMPAIGN_STATUSES.active'),

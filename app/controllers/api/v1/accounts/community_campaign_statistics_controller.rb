@@ -28,7 +28,7 @@ class Api::V1::Accounts::CommunityCampaignStatisticsController < Api::V1::Accoun
     end
 
     status = params[:status].presence || 'all'
-    unless (CommunityCampaignDelivery::STATUSES + %w[all awaiting accepted delivered_all]).include?(status)
+    unless (CommunityCampaignDelivery::STATUSES + %w[all awaiting accepted delivered_all replied]).include?(status)
       raise CustomExceptions::CommunityCampaignFilterError, 'El estado no es válido.'
     end
     query = params[:query].presence || ''

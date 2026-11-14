@@ -48,6 +48,7 @@ const statusOptions = computed(() => [
     'awaiting',
     'accepted',
     'delivered_all',
+    'replied',
   ].map(value => ({
     value,
     label: labels.value.statuses[value],
@@ -94,6 +95,10 @@ const badgeClasses = {
   failed: 'bg-n-ruby-9/10 text-n-ruby-11',
   unconfirmed: 'bg-n-amber-9/10 text-n-amber-11',
 };
+const replyBadge = recipient =>
+  ['button', 'quote'].includes(recipient.reply_source)
+    ? t('COMMUNITY_CAMPAIGNS.RECIPIENT_REPLY_CONFIRMED')
+    : t('COMMUNITY_CAMPAIGNS.RECIPIENT_REPLY_PROBABLE');
 const changeDates = ([from, to, type]) => {
   filters.from = format(from, 'yyyy-MM-dd');
   filters.to = format(to, 'yyyy-MM-dd');
@@ -292,6 +297,27 @@ const reset = () => {
                   {{ rate(data.summary.read, data.summary.delivered) }}
                 </strong>
               </div>
+              <button
+                type="button"
+                class="text-start"
+                :title="t('COMMUNITY_CAMPAIGNS.RATE_REPLY_HINT')"
+                @click="filters.status = 'replied'"
+              >
+                <span class="text-sm text-n-slate-11">
+                  {{ t('COMMUNITY_CAMPAIGNS.REPLY_RATE') }}
+                </span>
+                <strong class="ms-3 text-xl tabular-nums text-n-blue-11">
+                  {{ rate(data.summary.replied, data.summary.delivered) }}
+                </strong>
+                <span class="ms-2 text-xs text-n-slate-11">
+                  {{
+                    t('COMMUNITY_CAMPAIGNS.REPLY_DETAIL', {
+                      replied: number(data.summary.replied),
+                      confirmed: number(data.summary.replied_confirmed),
+                    })
+                  }}
+                </span>
+              </button>
             </div>
             <p
               v-if="data.summary.historical"
@@ -347,6 +373,12 @@ const reset = () => {
                       </th>
                       <th
                         class="p-4 text-end"
+                        :title="t('COMMUNITY_CAMPAIGNS.RATE_REPLY_HINT')"
+                      >
+                        {{ t('COMMUNITY_CAMPAIGNS.REPLIES') }}
+                      </th>
+                      <th
+                        class="p-4 text-end"
                         :title="t('COMMUNITY_CAMPAIGNS.DURATION_HINT')"
                       >
                         {{ t('COMMUNITY_CAMPAIGNS.DURATION') }}
@@ -399,6 +431,19 @@ const reset = () => {
                       </td>
                       <td class="p-4 text-end tabular-nums">
                         {{ number(campaign.metrics.failed) }}
+                      </td>
+                      <td
+                        class="p-4 text-end tabular-nums"
+                        :title="
+                          t('COMMUNITY_CAMPAIGNS.REPLY_DETAIL', {
+                            replied: number(campaign.metrics.replied),
+                            confirmed: number(
+                              campaign.metrics.replied_confirmed
+                            ),
+                          })
+                        "
+                      >
+                        {{ number(campaign.metrics.replied) }}
                       </td>
                       <td
                         class="whitespace-nowrap p-4 text-end text-n-slate-11"
@@ -520,6 +565,13 @@ const reset = () => {
                           :class="badgeClasses[recipient.status]"
                         >
                           {{ labels.statuses[recipient.status] }}
+                        </span>
+                        <span
+                          v-if="recipient.replied_at"
+                          class="ms-1 whitespace-nowrap rounded-md bg-n-blue-9/10 px-2 py-1 text-xs text-n-blue-11"
+                          :title="time(recipient.replied_at)"
+                        >
+                          {{ replyBadge(recipient) }}
                         </span>
                       </td>
                       <td
