@@ -38,6 +38,28 @@
     "READ_RATE": "Tasa de lectura",
     "RATE_DELIVERY_HINT": "Entregados ÷ enviados aceptados por WhatsApp.",
     "RATE_READ_HINT": "Leídos ÷ entregados.",
+    "REPLY_RATE": "Tasa de respuesta",
+    "RATE_REPLY_HINT": "Contactos que respondieron ÷ entregados. Confirmadas: citaron la plantilla o tocaron uno de sus botones. Probables: escribieron dentro de las 24 h siguientes sin otra conversación de por medio. Quienes llegan por un anuncio de Meta no cuentan. Se registran respuestas desde el 14 de noviembre de 2026.",
+    "REPLY_DETAIL": "{replied} respondieron · {confirmed} confirmadas",
+    "REPLIES": "Respuestas",
+    "RECIPIENT_REPLY_CONFIRMED": "Respondió",
+    "RECIPIENT_REPLY_PROBABLE": "Respondió (probable)",
+    "REPLY_ATTRIBUTION": {
+      "TITLE": "Respuesta a campaña",
+      "CONFIRMED": "Confirmada",
+      "PROBABLE": "Probable",
+      "DETAIL": "{source} · enviada el {date}",
+      "SOURCES": {
+        "BUTTON": "Tocó un botón de la plantilla",
+        "QUOTE": "Respondió citando la plantilla",
+        "WINDOW": "Escribió en las 24 h siguientes"
+      },
+      "HINTS": {
+        "BUTTON": "WhatsApp indicó que el contacto tocó un botón de este mensaje de campaña.",
+        "QUOTE": "WhatsApp indicó que el contacto respondió citando este mensaje de campaña.",
+        "WINDOW": "Es el primer mensaje del contacto en las 24 h siguientes a la campaña, sin otra conversación de por medio. No citó la plantilla, así que no es seguro."
+      }
+    },
     "NO_RATE": "Sin datos",
     "DISTRIBUTION": "Estado de los destinatarios",
     "DISTRIBUTION_HINT": "Cada destinatario aparece en un solo estado. Haz clic en un segmento para filtrar el detalle.",
@@ -87,7 +109,8 @@
       "unconfirmed": "Sin confirmación",
       "awaiting": "Pendientes de entrega",
       "accepted": "Todos los enviados",
-      "delivered_all": "Entregados y leídos"
+      "delivered_all": "Entregados y leídos",
+      "replied": "Respondieron"
     }
   }
 }

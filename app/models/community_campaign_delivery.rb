@@ -2,6 +2,7 @@ class CommunityCampaignDelivery < ApplicationRecord
   STATUSES = %w[pending sent delivered read failed unconfirmed].freeze
   AWAITING_STATUSES = %w[pending sent unconfirmed].freeze
   SUCCESS_RANK = { 'sent' => 1, 'delivered' => 2, 'read' => 3 }.freeze
+  CONFIRMED_REPLY_SOURCES = %w[button quote].freeze
 
   belongs_to :account
   belongs_to :campaign
@@ -39,6 +40,16 @@ class CommunityCampaignDelivery < ApplicationRecord
     end
   end
 
+  # Keeps the first reply. A confirmed reply replaces an earlier probable one, never the reverse.
+  def record_reply!(message, source)
+    with_lock do
+      next if replied_at.present? && (CONFIRMED_REPLY_SOURCES.include?(reply_source) || source == 'window')
+
+      update!(replied_at: replied_at || message.created_at, reply_message_id: message.id,
+              reply_conversation_id: message.conversation_id, reply_source: source)
+    end
+  end
+
   def apply_receipt!(receipt)
     next_status = receipt.fetch(:status)
     return unless SUCCESS_RANK.key?(next_status) || next_status == 'failed'
@@ -72,7 +83,7 @@ class CommunityCampaignDelivery < ApplicationRecord
   end
 
   def self.metrics_by_campaign
-    metrics = Hash.new { |hash, key| hash[key] = { total: 0, sent: 0, delivered: 0, read: 0, failed: 0, pending: 0, unconfirmed: 0, historical: 0 } }
+    metrics = Hash.new { |hash, key| hash[key] = CommunityCampaignReport.empty_metrics }
     group(:campaign_id, :status).count.each do |(campaign_id, state), count|
       metrics[campaign_id][:total] += count
       metrics[campaign_id][:failed] += count if state == 'failed'
@@ -83,6 +94,8 @@ class CommunityCampaignDelivery < ApplicationRecord
       where.not("#{state}_at" => nil).group(:campaign_id).count.each { |id, count| metrics[id][state] = count }
     end
     where(historical: true).group(:campaign_id).count.each { |id, count| metrics[id][:historical] = count }
+    where.not(replied_at: nil).group(:campaign_id).count.each { |id, count| metrics[id][:replied] = count }
+    where(reply_source: CONFIRMED_REPLY_SOURCES).group(:campaign_id).count.each { |id, count| metrics[id][:replied_confirmed] = count }
     metrics
   end
 
@@ -113,6 +126,7 @@ class CommunityCampaignDelivery < ApplicationRecord
     return all if value.blank? || value == 'all'
     return where.not(sent_at: nil) if value == 'accepted'
     return where.not(delivered_at: nil) if value == 'delivered_all'
+    return where.not(replied_at: nil) if value == 'replied'
 
     where(status: value == 'awaiting' ? AWAITING_STATUSES : value)
   end
@@ -121,6 +135,7 @@ class CommunityCampaignDelivery < ApplicationRecord
     { id: id, campaign_id: campaign.display_id, campaign_title: campaign.title, status: status,
       contact: { id: contact_id, name: contact&.name, phone_number: contact&.phone_number },
       sent_at: sent_at, delivered_at: delivered_at, read_at: read_at, failed_at: failed_at,
-      error_code: error_code, error_message: error_message, last_event_at: last_event_at, historical: historical }
+      error_code: error_code, error_message: error_message, last_event_at: last_event_at, historical: historical,
+      replied_at: replied_at, reply_source: reply_source }
   end
 end

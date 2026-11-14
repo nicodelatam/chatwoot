@@ -13,6 +13,23 @@ class Whatsapp::IncomingMessageWhatsappCloudService < Whatsapp::IncomingMessageB
     @processed_params ||= params[:entry].try(:first).try(:[], 'changes').try(:first).try(:[], 'value')
   end
 
+  def create_messages
+    super
+    @campaign_reply&.delivery&.record_reply!(@message, @campaign_reply.source) if @message&.persisted?
+  end
+
+  def message_content_attributes(message)
+    attributes = super
+    return attributes if outgoing_echo
+
+    # Contact cards build several messages from one webhook; attribute the webhook once.
+    unless defined?(@campaign_reply)
+      @campaign_reply = CommunityCampaigns::ReplyAttributionService.new(inbox: inbox, contact: @contact, message: message).perform
+    end
+    attributes[:campaign_attribution] = @campaign_reply.content_attributes if @campaign_reply
+    attributes
+  end
+
   def download_attachment_file(attachment_payload)
     url_response = HTTParty.get(
       inbox.channel.media_url(attachment_payload[:id]),

@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[7.1].define(version: 2026_11_07_160044) do
+ActiveRecord::Schema[7.1].define(version: 2026_11_14_022848) do
   # These extensions should be enabled to support this database
   enable_extension "pg_stat_statements"
   enable_extension "pg_trgm"
@@ -787,6 +787,10 @@ ActiveRecord::Schema[7.1].define(version: 2026_11_07_160044) do
     t.datetime "last_event_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.datetime "replied_at"
+    t.bigint "reply_message_id"
+    t.bigint "reply_conversation_id"
+    t.string "reply_source"
     t.index ["account_id", "campaign_id", "status"], name: "idx_community_deliveries_report"
     t.index ["campaign_id", "contact_id"], name: "idx_community_deliveries_contact", unique: true
     t.index ["contact_id"], name: "index_community_campaign_deliveries_on_contact_id"

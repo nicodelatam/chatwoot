@@ -69,7 +69,7 @@ class CommunityCampaignReport < ApplicationRecord
   end
 
   def self.empty_metrics
-    { total: 0, sent: 0, delivered: 0, read: 0, failed: 0, pending: 0, unconfirmed: 0, historical: 0 }
+    { total: 0, sent: 0, delivered: 0, read: 0, failed: 0, pending: 0, unconfirmed: 0, historical: 0, replied: 0, replied_confirmed: 0 }
   end
 
   def self.campaign_option(campaign, labels)

@@ -44,6 +44,7 @@ import FormBubble from './bubbles/Form.vue';
 import VoiceCallBubble from './bubbles/VoiceCall.vue';
 import WhatsappFlowResponseBubble from './bubbles/WhatsappFlowResponse.vue';
 import WhatsappReferral from './bubbles/Text/WhatsappReferral.vue';
+import CampaignReplyAttribution from './bubbles/Text/CampaignReplyAttribution.vue';
 
 import MessageError from './MessageError.vue';
 import ForwardEmailPanel from './forward/ForwardEmailPanel.vue';
@@ -409,6 +410,12 @@ const shouldShowWhatsappReferral = computed(
     !!props.contentAttributes?.referral
 );
 
+const shouldShowCampaignReply = computed(
+  () =>
+    variant.value === MESSAGE_VARIANTS.USER &&
+    !!props.contentAttributes?.campaignAttribution
+);
+
 const payloadForContextMenu = computed(() => {
   return {
     id: props.id,
@@ -638,13 +645,19 @@ provideMessageContext({
           'ltr:ml-8 rtl:mr-8 justify-end': orientation === ORIENTATION.RIGHT,
           'ltr:mr-8 rtl:ml-8': orientation === ORIENTATION.LEFT,
           'flex-col items-start gap-2':
-            shouldShowWhatsappReferral || isForwardedEmail,
+            shouldShowWhatsappReferral ||
+            shouldShowCampaignReply ||
+            isForwardedEmail,
         }"
         @contextmenu="openContextMenu($event)"
       >
         <WhatsappReferral
           v-if="shouldShowWhatsappReferral"
           :referral="contentAttributes.referral"
+        />
+        <CampaignReplyAttribution
+          v-if="shouldShowCampaignReply"
+          :attribution="contentAttributes.campaignAttribution"
         />
         <ForwardedEmailBanner v-if="isForwardedEmail" />
         <Component :is="componentToRender" />

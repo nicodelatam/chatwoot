@@ -22,11 +22,25 @@ Esta implementación Community registra sus propias entregas y presenta un repor
 | Pendientes | Por enviar, enviados sin entrega confirmada y envíos cuyo resultado no se pudo confirmar. |
 | Tasa de entrega | Entregados / enviados aceptados. Sin denominador, muestra «Sin datos». |
 | Tasa de lectura | Leídos / entregados. |
+| Tasa de respuesta | Contactos con respuesta atribuida / entregados. Se muestran también las confirmadas. |
 | Duración del envío | `completed_at - started_at`; no mide cuánto tarda el contacto en leer. |
 
 La distribución muestra estados excluyentes, mientras que enviados, entregados y leídos son acumulativos. La tarjeta de enviados incluye todos los aceptados, y la de entregados incluye los leídos. La tabla puede filtrarse también por estado exacto.
 
-Las gráficas temporales usan la fecha del evento de Meta, o la aceptación local del envío. Muestran actividad dentro del rango de las campañas seleccionadas, mientras los indicadores muestran su estado conocido actual. No se calculan respuestas, clics, conversiones ni ingresos sin una fuente de atribución.
+Las gráficas temporales usan la fecha del evento de Meta, o la aceptación local del envío. Muestran actividad dentro del rango de las campañas seleccionadas, mientras los indicadores muestran su estado conocido actual. No se calculan clics, conversiones ni ingresos sin una fuente de atribución.
+
+## Respuestas a campañas
+
+Cada mensaje entrante de WhatsApp Cloud se atribuye una sola vez, con estas reglas en orden:
+
+1. **Anuncio de Meta.** Si el mensaje trae `referral` (Click-to-WhatsApp), no se atribuye a ninguna campaña; la tarjeta del anuncio ya lo identifica.
+2. **Confirmada.** El `context.id` del mensaje coincide con el identificador de Meta de un envío de campaña del mismo inbox, sin límite de tiempo: el contacto tocó un botón de respuesta rápida de la plantilla (`button`) o la citó (`quote`). Si el identificador llega con otro alcance (teléfono o BSUID), se compara su token.
+3. **Probable.** Sin lo anterior: es el primer mensaje del contacto en las 24 horas siguientes a su último envío correcto (enviado, entregado o leído) de ese inbox, sin mensajes de la conversación de por medio y sin una respuesta registrada (`window`).
+4. En cualquier otro caso no se atribuye.
+
+La conversación muestra sobre el mensaje la campaña, si es confirmada o probable y cómo se dedujo. La atribución se guarda en `content_attributes.campaign_attribution` del mensaje, y la primera respuesta en `replied_at`, `reply_message_id`, `reply_conversation_id` y `reply_source` de la entrega. Una respuesta confirmada reemplaza a una probable anterior; nunca al revés. Agregar uno o dos botones de respuesta rápida a las plantillas convierte la mayoría de respuestas en confirmadas. Los botones de enlace o de llamada no generan mensaje y no permiten atribuir.
+
+Solo se atribuyen mensajes recibidos después de desplegar esta función y envíos con identificador de Meta guardado.
 
 ## Persistencia y webhooks
 
