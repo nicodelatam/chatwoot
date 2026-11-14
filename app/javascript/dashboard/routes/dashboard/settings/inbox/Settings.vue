@@ -3,6 +3,7 @@ import { mapGetters } from 'vuex';
 import { shouldBeUrl } from 'shared/helpers/Validators';
 import { useAlert } from 'dashboard/composables';
 import { useVuelidate } from '@vuelidate/core';
+import { useConfig } from 'dashboard/composables/useConfig';
 import Avatar from 'next/avatar/Avatar.vue';
 import Banner from 'dashboard/components-next/banner/Banner.vue';
 import Icon from 'dashboard/components-next/icon/Icon.vue';
@@ -25,6 +26,7 @@ import GreetingsEditor from 'shared/components/GreetingsEditor.vue';
 import ConfigurationPage from './settingsPage/ConfigurationPage.vue';
 import VoiceConfigurationPage from './settingsPage/VoiceConfigurationPage.vue';
 import WhatsappCallingPage from './settingsPage/WhatsappCallingPage.vue';
+import CommunityWhatsappCallingPage from './settingsPage/CommunityWhatsappCallingPage.vue';
 import CustomerSatisfactionPage from './settingsPage/CustomerSatisfactionPage.vue';
 import CollaboratorsPage from './settingsPage/CollaboratorsPage.vue';
 import BotConfiguration from './components/BotConfiguration.vue';
@@ -60,6 +62,7 @@ export default {
     ConfigurationPage,
     VoiceConfigurationPage,
     WhatsappCallingPage,
+    CommunityWhatsappCallingPage,
     CustomerSatisfactionPage,
     FacebookReauthorize,
     GreetingsEditor,
@@ -93,7 +96,8 @@ export default {
   },
   mixins: [inboxMixin],
   setup() {
-    return { v$: useVuelidate() };
+    const { isEnterprise } = useConfig();
+    return { v$: useVuelidate(), isEnterprise };
   },
   data() {
     return {
@@ -286,10 +290,11 @@ export default {
 
       if (
         this.isAWhatsAppCloudChannel &&
-        this.isFeatureEnabledonAccount(
-          this.accountId,
-          FEATURE_FLAGS.CHANNEL_VOICE
-        )
+        (!this.isEnterprise ||
+          this.isFeatureEnabledonAccount(
+            this.accountId,
+            FEATURE_FLAGS.CHANNEL_VOICE
+          ))
       ) {
         visibleToAllChannelTabs = [
           ...visibleToAllChannelTabs,
@@ -1424,7 +1429,8 @@ export default {
           v-if="selectedTabKey === 'calls-configuration'"
           class="mx-6 max-w-4xl"
         >
-          <WhatsappCallingPage :inbox="inbox" />
+          <WhatsappCallingPage v-if="isEnterprise" :inbox="inbox" />
+          <CommunityWhatsappCallingPage v-else :inbox="inbox" />
         </div>
         <div v-if="selectedTabKey === 'csat'">
           <CustomerSatisfactionPage :inbox="inbox" />

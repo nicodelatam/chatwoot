@@ -42,7 +42,7 @@ jobs:
           pnpm exec eslint app/javascript/dashboard/api/communityWhatsappCalls.js
           app/javascript/dashboard/composables/useCommunityWhatsappCalling.js
           app/javascript/dashboard/components-next/CommunityCalling/*.vue
-          app/javascript/dashboard/components-next/sidebar/Sidebar.vue
+          app/javascript/dashboard/routes/dashboard/settings/inbox/settingsPage/CommunityWhatsappCallingPage.vue
           app/javascript/dashboard/api/communityCampaignStatistics.js
           app/javascript/dashboard/api/communityCampaignAudience.js
           app/javascript/dashboard/components-next/Campaigns/WhatsAppCampaign/CommunityAudienceFields.vue
